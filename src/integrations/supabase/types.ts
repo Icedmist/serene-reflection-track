@@ -14,7 +14,132 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      profiles: {
+        Row: {
+          created_at: string
+          current_ramadan_day: number
+          display_name: string
+          id: string
+          mode: string
+          onboarded: boolean
+          quran_tracking_style: string
+          reminder_dhikr: boolean
+          reminder_fajr: boolean
+          reminder_quran: boolean
+          reminder_tahajjud: boolean
+          reminder_time_dhikr: string | null
+          reminder_time_fajr: string | null
+          reminder_time_quran: string | null
+          reminder_time_tahajjud: string | null
+          sharing_enabled: boolean
+          total_xp: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          current_ramadan_day?: number
+          display_name?: string
+          id?: string
+          mode?: string
+          onboarded?: boolean
+          quran_tracking_style?: string
+          reminder_dhikr?: boolean
+          reminder_fajr?: boolean
+          reminder_quran?: boolean
+          reminder_tahajjud?: boolean
+          reminder_time_dhikr?: string | null
+          reminder_time_fajr?: string | null
+          reminder_time_quran?: string | null
+          reminder_time_tahajjud?: string | null
+          sharing_enabled?: boolean
+          total_xp?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          current_ramadan_day?: number
+          display_name?: string
+          id?: string
+          mode?: string
+          onboarded?: boolean
+          quran_tracking_style?: string
+          reminder_dhikr?: boolean
+          reminder_fajr?: boolean
+          reminder_quran?: boolean
+          reminder_tahajjud?: boolean
+          reminder_time_dhikr?: string | null
+          reminder_time_fajr?: string | null
+          reminder_time_quran?: string | null
+          reminder_time_tahajjud?: string | null
+          sharing_enabled?: boolean
+          total_xp?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      rewards: {
+        Row: {
+          badge_description: string | null
+          badge_icon: string
+          badge_id: string
+          badge_name: string
+          earned_at: string
+          id: string
+          user_id: string
+          xp_earned: number
+        }
+        Insert: {
+          badge_description?: string | null
+          badge_icon?: string
+          badge_id: string
+          badge_name: string
+          earned_at?: string
+          id?: string
+          user_id: string
+          xp_earned?: number
+        }
+        Update: {
+          badge_description?: string | null
+          badge_icon?: string
+          badge_id?: string
+          badge_name?: string
+          earned_at?: string
+          id?: string
+          user_id?: string
+          xp_earned?: number
+        }
+        Relationships: []
+      }
+      share_links: {
+        Row: {
+          created_at: string
+          id: string
+          is_active: boolean
+          share_code: string
+          share_type: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          share_code?: string
+          share_type?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          share_code?: string
+          share_type?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
