@@ -1,16 +1,22 @@
 import { useStore } from '@/lib/store';
+import { useAuth } from '@/lib/auth-context';
+import { supabase } from '@/integrations/supabase/client';
 import { SURAH_NAMES } from '@/lib/types';
 import { useRef, useState } from 'react';
 import { toPng } from 'html-to-image';
-import { Share2, Download, CheckCircle2, BookOpen, Flame, Moon, Copy, Check } from 'lucide-react';
+import { Share2, Download, Moon, Copy, Check, Link2, ExternalLink } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { toast } from 'sonner';
 
 export default function SharePage() {
   const { state, todayLog } = useStore();
+  const { user } = useAuth();
   const cardRef = useRef<HTMLDivElement>(null);
   const [downloading, setDownloading] = useState(false);
   const [copied, setCopied] = useState(false);
   const [cardStyle, setCardStyle] = useState<'summary' | 'quran' | 'streak'>('summary');
+  const [shareLink, setShareLink] = useState('');
+  const [generatingLink, setGeneratingLink] = useState(false);
 
   const completedTasks = todayLog.tasks.filter(t => t.completed);
   const topStreaks = state.streaks.sort((a, b) => b.currentStreak - a.currentStreak).slice(0, 3);
@@ -30,11 +36,34 @@ export default function SharePage() {
     setDownloading(false);
   };
 
-  const handleCopyLink = () => {
+  const handleCopyText = () => {
     const shareText = `Ramadan Day ${state.currentRamadanDay} — ${todayLog.completionPercent}% complete. ${completedTasks.length} tasks done. Qur'an: Surah ${SURAH_NAMES[state.quranProgress.currentSurah]}. #IbadahTrack`;
     navigator.clipboard.writeText(shareText);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
+  };
+
+  const handleGenerateLink = async () => {
+    if (!user) {
+      toast.error('Sign in to generate share links');
+      return;
+    }
+    setGeneratingLink(true);
+    const { data, error } = await supabase
+      .from('share_links')
+      .insert({ user_id: user.id, share_type: cardStyle })
+      .select('share_code')
+      .single();
+    
+    if (data) {
+      const url = `${window.location.origin}/shared/${data.share_code}`;
+      setShareLink(url);
+      navigator.clipboard.writeText(url);
+      toast.success('Share link copied!');
+    } else {
+      toast.error('Failed to create link');
+    }
+    setGeneratingLink(false);
   };
 
   return (
@@ -70,14 +99,13 @@ export default function SharePage() {
             fontFamily: "'Plus Jakarta Sans', sans-serif",
           }}
         >
-          {/* Header */}
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <Moon style={{ width: 18, height: 18, color: '#d4a843' }} />
               <span style={{ fontSize: 12, color: '#a0937d' }}>IbadahTrack</span>
             </div>
             <span style={{ fontSize: 11, color: '#a0937d' }}>
-              {state.mode === 'itikaf' ? "I'tikaf Mode" : 'Ramadan'}
+              {state.userName}'s Journey
             </span>
           </div>
 
@@ -89,28 +117,22 @@ export default function SharePage() {
 
           {cardStyle === 'summary' && (
             <div className="space-y-3">
-              <div className="flex items-center justify-between" style={{ background: 'rgba(255,255,255,0.05)', borderRadius: 8, padding: '10px 14px' }}>
-                <span style={{ fontSize: 13 }}>Tasks Completed</span>
-                <span style={{ fontWeight: 700, color: '#5ea882' }}>{completedTasks.length}/{todayLog.tasks.length}</span>
-              </div>
-              <div className="flex items-center justify-between" style={{ background: 'rgba(255,255,255,0.05)', borderRadius: 8, padding: '10px 14px' }}>
-                <span style={{ fontSize: 13 }}>Qur'an</span>
-                <span style={{ fontWeight: 700, color: '#d4a843' }}>{SURAH_NAMES[state.quranProgress.currentSurah]}</span>
-              </div>
-              <div className="flex items-center justify-between" style={{ background: 'rgba(255,255,255,0.05)', borderRadius: 8, padding: '10px 14px' }}>
-                <span style={{ fontSize: 13 }}>Top Streak</span>
-                <span style={{ fontWeight: 700, color: '#d4a843' }}>{topStreaks[0]?.icon} {topStreaks[0]?.currentStreak} days</span>
-              </div>
-              <div className="flex items-center justify-between" style={{ background: 'rgba(255,255,255,0.05)', borderRadius: 8, padding: '10px 14px' }}>
-                <span style={{ fontSize: 13 }}>Completion</span>
-                <span style={{ fontWeight: 700, color: '#5ea882' }}>{todayLog.completionPercent}%</span>
-              </div>
+              {[
+                ['Tasks Completed', `${completedTasks.length}/${todayLog.tasks.length}`, '#5ea882'],
+                ["Qur'an", SURAH_NAMES[state.quranProgress.currentSurah], '#d4a843'],
+                ['Top Streak', `${topStreaks[0]?.icon} ${topStreaks[0]?.currentStreak} days`, '#d4a843'],
+                ['Completion', `${todayLog.completionPercent}%`, '#5ea882'],
+              ].map(([label, value, color]) => (
+                <div key={label as string} className="flex items-center justify-between" style={{ background: 'rgba(255,255,255,0.05)', borderRadius: 8, padding: '10px 14px' }}>
+                  <span style={{ fontSize: 13 }}>{label}</span>
+                  <span style={{ fontWeight: 700, color: color as string }}>{value}</span>
+                </div>
+              ))}
             </div>
           )}
 
           {cardStyle === 'quran' && (
             <div className="text-center space-y-3">
-              <BookOpen style={{ width: 32, height: 32, margin: '0 auto', color: '#5ea882' }} />
               <p style={{ fontSize: 14, color: '#a0937d' }}>Currently reading</p>
               <p style={{ fontSize: 24, fontWeight: 700, color: '#d4a843', fontFamily: "'Amiri', serif" }}>
                 {SURAH_NAMES[state.quranProgress.currentSurah]}
@@ -131,9 +153,6 @@ export default function SharePage() {
 
           {cardStyle === 'streak' && (
             <div className="space-y-3">
-              <div className="text-center">
-                <Flame style={{ width: 28, height: 28, margin: '0 auto', color: '#d4a843' }} />
-              </div>
               {topStreaks.map(s => (
                 <div key={s.habit} className="flex items-center justify-between" style={{ background: 'rgba(255,255,255,0.05)', borderRadius: 8, padding: '10px 14px' }}>
                   <span style={{ fontSize: 13 }}>{s.icon} {s.habit}</span>
@@ -160,11 +179,33 @@ export default function SharePage() {
           {downloading ? 'Generating...' : 'Download Card'}
         </button>
         <button
-          onClick={handleCopyLink}
+          onClick={handleCopyText}
           className="flex items-center justify-center gap-2 bg-secondary text-secondary-foreground rounded-xl px-5 py-3 font-medium text-sm hover:opacity-90 transition-opacity"
         >
           {copied ? <Check className="w-4 h-4 text-accent" /> : <Copy className="w-4 h-4" />}
         </button>
+      </div>
+
+      {/* Generate share link */}
+      <div className="glass-card p-4 space-y-3">
+        <h3 className="text-sm font-semibold flex items-center gap-2">
+          <Link2 className="w-4 h-4 text-primary" /> Public Share Link
+        </h3>
+        <p className="text-xs text-muted-foreground">Generate a link anyone can view — they'll see your progress and can join too!</p>
+        <button
+          onClick={handleGenerateLink}
+          disabled={generatingLink}
+          className="w-full py-3 bg-accent text-accent-foreground rounded-xl font-semibold text-sm flex items-center justify-center gap-2 hover:opacity-90 transition-opacity disabled:opacity-50"
+        >
+          <ExternalLink className="w-4 h-4" />
+          {generatingLink ? 'Generating...' : 'Generate Share Link'}
+        </button>
+        {shareLink && (
+          <div className="bg-secondary/50 rounded-lg p-3">
+            <p className="text-xs text-muted-foreground mb-1">Link copied to clipboard:</p>
+            <p className="text-xs font-mono text-foreground break-all">{shareLink}</p>
+          </div>
+        )}
       </div>
     </div>
   );

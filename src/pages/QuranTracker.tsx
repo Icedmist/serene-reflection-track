@@ -1,7 +1,8 @@
 import { useStore } from '@/lib/store';
 import { SURAH_NAMES } from '@/lib/types';
-import { BookOpen, ChevronUp, ChevronDown, Target } from 'lucide-react';
+import { BookOpen, ChevronUp, ChevronDown, Target, BookMarked } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { Link } from 'react-router-dom';
 
 export default function QuranTracker() {
   const { state, updateQuranSurah } = useStore();
@@ -14,9 +15,17 @@ export default function QuranTracker() {
 
   return (
     <div className="px-4 pt-6 space-y-5">
-      <h1 className="text-xl font-bold gold-text flex items-center gap-2">
-        <BookOpen className="w-5 h-5" /> Qur'an Progress
-      </h1>
+      <div className="flex items-center justify-between">
+        <h1 className="text-xl font-bold gold-text flex items-center gap-2">
+          <BookOpen className="w-5 h-5" /> Qur'an Progress
+        </h1>
+        <Link
+          to="/quran/read"
+          className="flex items-center gap-1.5 px-3 py-1.5 bg-primary text-primary-foreground rounded-lg text-xs font-medium hover:opacity-90 transition-opacity"
+        >
+          <BookMarked className="w-3.5 h-3.5" /> Read
+        </Link>
+      </div>
 
       {/* Main Progress */}
       <motion.div
@@ -32,7 +41,6 @@ export default function QuranTracker() {
           <p className="text-sm text-muted-foreground">Surah {quranProgress.currentSurah} of 114</p>
         </div>
 
-        {/* Progress bar */}
         <div className="space-y-1.5">
           <div className="h-3 bg-secondary rounded-full overflow-hidden">
             <motion.div
@@ -49,7 +57,6 @@ export default function QuranTracker() {
           </div>
         </div>
 
-        {/* Surah navigator */}
         <div className="flex items-center justify-center gap-4 pt-2">
           <button
             onClick={() => updateQuranSurah(quranProgress.currentSurah - 1)}
