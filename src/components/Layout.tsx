@@ -1,0 +1,41 @@
+import { NavLink, useLocation } from 'react-router-dom';
+import { LayoutDashboard, Calendar, BookOpen, Heart, Share2 } from 'lucide-react';
+
+const navItems = [
+  { to: '/', icon: LayoutDashboard, label: 'Today' },
+  { to: '/calendar', icon: Calendar, label: 'Calendar' },
+  { to: '/quran', icon: BookOpen, label: "Qur'an" },
+  { to: '/dhikr', icon: Heart, label: 'Dhikr' },
+  { to: '/share', icon: Share2, label: 'Share' },
+];
+
+export default function Layout({ children }: { children: React.ReactNode }) {
+  const location = useLocation();
+
+  return (
+    <div className="min-h-screen bg-background pattern-overlay">
+      <main className="pb-20 max-w-lg mx-auto">
+        {children}
+      </main>
+      <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-border bg-card/95 backdrop-blur-md">
+        <div className="max-w-lg mx-auto flex items-center justify-around py-2">
+          {navItems.map(({ to, icon: Icon, label }) => {
+            const active = location.pathname === to;
+            return (
+              <NavLink
+                key={to}
+                to={to}
+                className={`flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-lg transition-colors ${
+                  active ? 'text-primary' : 'text-muted-foreground hover:text-foreground'
+                }`}
+              >
+                <Icon className={`w-5 h-5 ${active ? 'stroke-[2.5]' : ''}`} />
+                <span className="text-[10px] font-medium">{label}</span>
+              </NavLink>
+            );
+          })}
+        </div>
+      </nav>
+    </div>
+  );
+}
