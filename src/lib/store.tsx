@@ -6,6 +6,7 @@ const STORAGE_KEY = 'ibadahtrack-state';
 
 interface StoreContextType {
   state: AppState;
+  setState: React.Dispatch<React.SetStateAction<AppState>>;
   todayLog: DayLog;
   toggleTask: (taskId: string) => void;
   updateDhikr: (dhikrId: string, delta: number) => void;
@@ -86,7 +87,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   return (
-    <StoreContext.Provider value={{ state, todayLog, toggleTask, updateDhikr, updateReflection, updateQuranSurah, getDayLog, resetDemo }}>
+    <StoreContext.Provider value={{ state, setState, todayLog, toggleTask, updateDhikr, updateReflection, updateQuranSurah, getDayLog, resetDemo }}>
       {children}
     </StoreContext.Provider>
   );
