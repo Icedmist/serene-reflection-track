@@ -3,11 +3,13 @@ export interface DailyTask {
   title: string;
   category: 'salah' | 'quran' | 'dhikr' | 'dua' | 'custom' | 'meal' | 'rest';
   timeSlot?: string;
+  timeBlock: 'dawn' | 'morning' | 'afternoon' | 'evening' | 'night';
   completed: boolean;
   notes?: string;
   targetCount?: number;
   currentCount?: number;
   streakEnabled?: boolean;
+  guidance?: string;
 }
 
 export interface DhikrCounter {
@@ -16,6 +18,35 @@ export interface DhikrCounter {
   nameAr?: string;
   count: number;
   target: number;
+}
+
+export interface DuaEntry {
+  id: string;
+  text: string;
+  answered: boolean;
+  createdAt: string;
+}
+
+export interface AdhkarMicrotask {
+  id: string;
+  title: string;
+  titleAr?: string;
+  count: number;
+  target: number;
+  completed: boolean;
+}
+
+export interface QuranSession {
+  id: string;
+  surah: number;
+  ayah: number;
+  juz?: number;
+  page?: number;
+  startedAt: string;
+  endedAt?: string;
+  status: 'active' | 'paused' | 'completed';
+  ayahsRead: number;
+  duration: number; // seconds
 }
 
 export interface DayLog {
@@ -28,15 +59,20 @@ export interface DayLog {
   dhikr: DhikrCounter[];
   reflectionNote?: string;
   completionPercent: number;
+  morningAdhkar?: AdhkarMicrotask[];
+  eveningAdhkar?: AdhkarMicrotask[];
 }
 
 export interface QuranProgress {
-  trackingStyle: 'surah' | 'juz';
+  trackingStyle: 'surah' | 'juz' | 'page' | 'ayah';
   startSurah: number;
   currentSurah: number;
+  currentAyah: number;
   startJuz: number;
   currentJuz: number;
+  currentPage: number;
   dailyLogs: { date: string; surahsRead: number[]; juzRead?: number }[];
+  lastSession?: QuranSession;
 }
 
 export interface StreakInfo {
@@ -46,15 +82,24 @@ export interface StreakInfo {
   icon: string;
 }
 
+export type FocusArea = 'quran' | 'salah' | 'adhkar' | 'night_prayers' | 'dua' | 'streaks' | 'balanced';
+export type EnabledActivity = 'morning_adhkar' | 'evening_adhkar' | 'tahajjud' | 'taraweeh' | 'tafseer' | 'salatul_tasbeeh' | 'dua_journal' | 'reflections';
+export type PrivacyMode = 'private' | 'share_streaks' | 'share_summaries';
+
 export interface AppState {
   userName: string;
   currentRamadanDay: number;
-  mode: 'ramadan' | 'itikaf' | 'general';
+  mode: ('ramadan' | 'itikaf' | 'general')[];
+  focusAreas: FocusArea[];
+  enabledActivities: EnabledActivity[];
+  privacyMode: PrivacyMode;
   quranProgress: QuranProgress;
   days: Record<string, DayLog>;
   streaks: StreakInfo[];
+  duas: DuaEntry[];
   sharingEnabled: boolean;
   onboarded: boolean;
+  totalXp: number;
 }
 
 export const SURAH_NAMES: Record<number, string> = {
@@ -81,4 +126,38 @@ export const SURAH_NAMES: Record<number, string> = {
   101: 'Al-Qari\'ah', 102: 'At-Takathur', 103: 'Al-Asr', 104: 'Al-Humazah', 105: 'Al-Fil',
   106: 'Quraysh', 107: 'Al-Ma\'un', 108: 'Al-Kawthar', 109: 'Al-Kafirun', 110: 'An-Nasr',
   111: 'Al-Masad', 112: 'Al-Ikhlas', 113: 'Al-Falaq', 114: 'An-Nas',
+};
+
+export const MORNING_ADHKAR_TEMPLATE: Omit<AdhkarMicrotask, 'completed'>[] = [
+  { id: 'ayat-kursi-m', title: 'Ayat al-Kursi', titleAr: 'آية الكرسي', count: 0, target: 1 },
+  { id: 'ikhlas-m', title: 'Surah Al-Ikhlas', titleAr: 'سورة الإخلاص', count: 0, target: 3 },
+  { id: 'falaq-m', title: 'Surah Al-Falaq', titleAr: 'سورة الفلق', count: 0, target: 3 },
+  { id: 'nas-m', title: 'Surah An-Nas', titleAr: 'سورة الناس', count: 0, target: 3 },
+  { id: 'morning-dua', title: 'Morning Supplication', titleAr: 'أصبحنا وأصبح الملك لله', count: 0, target: 1 },
+  { id: 'sayyidul-istighfar', title: 'Sayyid al-Istighfar', titleAr: 'سيد الاستغفار', count: 0, target: 1 },
+  { id: 'salawat-m', title: 'Salawat upon the Prophet ﷺ', titleAr: 'اللهم صل على محمد', count: 0, target: 10 },
+  { id: 'tasbih-set-m', title: 'SubhanAllah, Alhamdulillah, Allahu Akbar', titleAr: 'سبحان الله والحمد لله والله أكبر', count: 0, target: 33 },
+];
+
+export const EVENING_ADHKAR_TEMPLATE: Omit<AdhkarMicrotask, 'completed'>[] = [
+  { id: 'ayat-kursi-e', title: 'Ayat al-Kursi', titleAr: 'آية الكرسي', count: 0, target: 1 },
+  { id: 'ikhlas-e', title: 'Surah Al-Ikhlas', titleAr: 'سورة الإخلاص', count: 0, target: 3 },
+  { id: 'falaq-e', title: 'Surah Al-Falaq', titleAr: 'سورة الفلق', count: 0, target: 3 },
+  { id: 'nas-e', title: 'Surah An-Nas', titleAr: 'سورة الناس', count: 0, target: 3 },
+  { id: 'evening-dua', title: 'Evening Supplication', titleAr: 'أمسينا وأمسى الملك لله', count: 0, target: 1 },
+  { id: 'istighfar-e', title: 'Istighfar', titleAr: 'أستغفر الله', count: 0, target: 3 },
+  { id: 'salawat-e', title: 'Salawat upon the Prophet ﷺ', titleAr: 'اللهم صل على محمد', count: 0, target: 10 },
+  { id: 'tasbih-set-e', title: 'SubhanAllah, Alhamdulillah, Allahu Akbar', titleAr: 'سبحان الله والحمد لله والله أكبر', count: 0, target: 33 },
+];
+
+export const TIME_BLOCK_ORDER: Record<string, number> = {
+  dawn: 0, morning: 1, afternoon: 2, evening: 3, night: 4,
+};
+
+export const TIME_BLOCK_LABELS: Record<string, { label: string; icon: string; timeRange: string }> = {
+  dawn: { label: 'Dawn', icon: '🌙', timeRange: '1:00 AM – 5:00 AM' },
+  morning: { label: 'Morning', icon: '🌅', timeRange: '5:00 AM – 12:00 PM' },
+  afternoon: { label: 'Afternoon', icon: '☀️', timeRange: '12:00 PM – 4:00 PM' },
+  evening: { label: 'Evening', icon: '🌇', timeRange: '4:00 PM – 7:30 PM' },
+  night: { label: 'Night', icon: '🌃', timeRange: '7:30 PM – 1:00 AM' },
 };

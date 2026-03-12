@@ -13,111 +13,97 @@ export default function QuranTracker() {
   const daysLeft = 30 - state.currentRamadanDay;
   const dailyTarget = daysLeft > 0 ? Math.ceil(surahsRemaining / daysLeft) : surahsRemaining;
 
+  const hasResumePoint = quranProgress.currentAyah > 1;
+
   return (
-    <div className="px-4 pt-6 space-y-5">
+    <div className="px-4 pt-6 space-y-4">
       <div className="flex items-center justify-between">
-        <h1 className="text-xl font-bold gold-text flex items-center gap-2">
-          <BookOpen className="w-5 h-5" /> Qur'an Progress
+        <h1 className="text-lg font-bold gold-text flex items-center gap-2">
+          <BookOpen className="w-4 h-4" /> Qur'an Progress
         </h1>
-        <Link
-          to="/quran/read"
-          className="flex items-center gap-1.5 px-3 py-1.5 bg-primary text-primary-foreground rounded-lg text-xs font-medium hover:opacity-90 transition-opacity"
-        >
-          <BookMarked className="w-3.5 h-3.5" /> Read
+        <Link to="/quran/read" className="flex items-center gap-1.5 px-3 py-1.5 bg-primary text-primary-foreground rounded-lg text-xs font-medium hover:opacity-90 transition-opacity">
+          <BookMarked className="w-3.5 h-3.5" /> {hasResumePoint ? 'Resume' : 'Read'}
         </Link>
       </div>
 
-      {/* Main Progress */}
-      <motion.div
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="glass-card p-5 space-y-4"
-      >
-        <div className="text-center space-y-1">
-          <p className="text-xs text-muted-foreground">Currently Reading</p>
-          <p className="text-2xl font-bold gold-text gold-glow font-arabic">
-            {SURAH_NAMES[quranProgress.currentSurah]}
-          </p>
-          <p className="text-sm text-muted-foreground">Surah {quranProgress.currentSurah} of 114</p>
+      {hasResumePoint && (
+        <div className="glass-card p-3 text-center border-primary/20">
+          <p className="text-[10px] text-muted-foreground">Resume from</p>
+          <p className="text-sm font-semibold gold-text">{SURAH_NAMES[quranProgress.currentSurah]} · Ayah {quranProgress.currentAyah}</p>
+        </div>
+      )}
+
+      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="glass-card p-4 space-y-3">
+        <div className="text-center space-y-0.5">
+          <p className="text-[10px] text-muted-foreground">Currently Reading</p>
+          <p className="text-xl font-bold gold-text gold-glow font-arabic">{SURAH_NAMES[quranProgress.currentSurah]}</p>
+          <p className="text-xs text-muted-foreground">Surah {quranProgress.currentSurah} of 114</p>
         </div>
 
-        <div className="space-y-1.5">
-          <div className="h-3 bg-secondary rounded-full overflow-hidden">
-            <motion.div
-              className="h-full bg-gradient-to-r from-primary to-accent rounded-full"
-              initial={{ width: 0 }}
-              animate={{ width: `${progress}%` }}
-              transition={{ duration: 0.8, ease: 'easeOut' }}
-            />
+        <div className="space-y-1">
+          <div className="h-2.5 bg-secondary rounded-full overflow-hidden">
+            <motion.div className="h-full bg-gradient-to-r from-primary to-accent rounded-full" initial={{ width: 0 }} animate={{ width: `${progress}%` }} transition={{ duration: 0.8 }} />
           </div>
-          <div className="flex justify-between text-[10px] text-muted-foreground">
+          <div className="flex justify-between text-[9px] text-muted-foreground">
             <span>{SURAH_NAMES[quranProgress.startSurah]}</span>
-            <span>{Math.round(progress)}% complete</span>
+            <span>{Math.round(progress)}%</span>
             <span>An-Nas</span>
           </div>
         </div>
 
-        <div className="flex items-center justify-center gap-4 pt-2">
-          <button
-            onClick={() => updateQuranSurah(quranProgress.currentSurah - 1)}
-            className="w-10 h-10 rounded-full bg-secondary flex items-center justify-center hover:bg-secondary/80 transition-colors"
-          >
-            <ChevronDown className="w-5 h-5" />
+        <div className="flex items-center justify-center gap-3 pt-1">
+          <button onClick={() => updateQuranSurah(quranProgress.currentSurah - 1)} className="w-9 h-9 rounded-full bg-secondary flex items-center justify-center">
+            <ChevronDown className="w-4 h-4" />
           </button>
-          <div className="text-center min-w-[120px]">
-            <p className="text-3xl font-bold gold-text">{quranProgress.currentSurah}</p>
-            <p className="text-xs text-muted-foreground">Current Surah</p>
+          <div className="text-center min-w-[100px]">
+            <p className="text-2xl font-bold gold-text">{quranProgress.currentSurah}</p>
+            <p className="text-[10px] text-muted-foreground">Current</p>
           </div>
-          <button
-            onClick={() => updateQuranSurah(quranProgress.currentSurah + 1)}
-            className="w-10 h-10 rounded-full bg-primary text-primary-foreground flex items-center justify-center hover:opacity-90 transition-opacity"
-          >
-            <ChevronUp className="w-5 h-5" />
+          <button onClick={() => updateQuranSurah(quranProgress.currentSurah + 1)} className="w-9 h-9 rounded-full bg-primary text-primary-foreground flex items-center justify-center">
+            <ChevronUp className="w-4 h-4" />
           </button>
         </div>
       </motion.div>
 
-      {/* Stats */}
-      <div className="grid grid-cols-2 gap-3">
-        <div className="glass-card p-4 text-center">
-          <p className="text-2xl font-bold text-accent">{surahsRead}</p>
-          <p className="text-xs text-muted-foreground">Surahs Read</p>
+      <div className="grid grid-cols-2 gap-2">
+        <div className="glass-card p-3 text-center">
+          <p className="text-xl font-bold text-accent">{surahsRead}</p>
+          <p className="text-[10px] text-muted-foreground">Read</p>
         </div>
-        <div className="glass-card p-4 text-center">
-          <p className="text-2xl font-bold gold-text">{surahsRemaining}</p>
-          <p className="text-xs text-muted-foreground">Remaining</p>
+        <div className="glass-card p-3 text-center">
+          <p className="text-xl font-bold gold-text">{surahsRemaining}</p>
+          <p className="text-[10px] text-muted-foreground">Remaining</p>
         </div>
-        <div className="glass-card p-4 text-center">
-          <p className="text-2xl font-bold text-foreground">{daysLeft}</p>
-          <p className="text-xs text-muted-foreground">Days Left</p>
+        <div className="glass-card p-3 text-center">
+          <p className="text-xl font-bold text-foreground">{daysLeft}</p>
+          <p className="text-[10px] text-muted-foreground">Days Left</p>
         </div>
-        <div className="glass-card p-4 text-center flex flex-col items-center">
+        <div className="glass-card p-3 text-center flex flex-col items-center">
           <div className="flex items-center gap-1">
-            <Target className="w-4 h-4 text-primary" />
-            <p className="text-2xl font-bold gold-text">{dailyTarget}</p>
+            <Target className="w-3.5 h-3.5 text-primary" />
+            <p className="text-xl font-bold gold-text">{dailyTarget}</p>
           </div>
-          <p className="text-xs text-muted-foreground">Surahs/Day Needed</p>
+          <p className="text-[10px] text-muted-foreground">Per Day</p>
         </div>
       </div>
 
-      {/* Journey path */}
-      <div className="glass-card p-4 space-y-3">
-        <h2 className="text-sm font-semibold">Your Journey</h2>
-        <div className="flex items-center gap-2 text-sm">
-          <span className="w-3 h-3 rounded-full bg-accent" />
-          <span className="text-muted-foreground">Started from</span>
+      <div className="glass-card p-3.5 space-y-2.5">
+        <h2 className="text-xs font-semibold">Journey</h2>
+        <div className="flex items-center gap-2 text-xs">
+          <span className="w-2.5 h-2.5 rounded-full bg-accent" />
+          <span className="text-muted-foreground">Started:</span>
           <span className="font-medium">{SURAH_NAMES[quranProgress.startSurah]}</span>
         </div>
-        <div className="ml-1.5 border-l-2 border-dashed border-primary/30 h-8" />
-        <div className="flex items-center gap-2 text-sm">
-          <span className="w-3 h-3 rounded-full bg-primary animate-pulse-gold" />
-          <span className="text-muted-foreground">Now at</span>
+        <div className="ml-1 border-l-2 border-dashed border-primary/30 h-5" />
+        <div className="flex items-center gap-2 text-xs">
+          <span className="w-2.5 h-2.5 rounded-full bg-primary animate-pulse-gold" />
+          <span className="text-muted-foreground">Now:</span>
           <span className="font-medium gold-text">{SURAH_NAMES[quranProgress.currentSurah]}</span>
         </div>
-        <div className="ml-1.5 border-l-2 border-dashed border-muted-foreground/20 h-8" />
-        <div className="flex items-center gap-2 text-sm">
-          <span className="w-3 h-3 rounded-full bg-secondary border border-border" />
-          <span className="text-muted-foreground">Goal</span>
+        <div className="ml-1 border-l-2 border-dashed border-muted-foreground/20 h-5" />
+        <div className="flex items-center gap-2 text-xs">
+          <span className="w-2.5 h-2.5 rounded-full bg-secondary border border-border" />
+          <span className="text-muted-foreground">Goal:</span>
           <span className="font-medium">An-Nas (114)</span>
         </div>
       </div>

@@ -16,6 +16,9 @@ import SharePage from "@/pages/SharePage";
 import RemindersPage from "@/pages/RemindersPage";
 import AboutPage from "@/pages/AboutPage";
 import PublicShareView from "@/pages/PublicShareView";
+import StreaksPage from "@/pages/StreaksPage";
+import GuidedAdhkarPage from "@/pages/GuidedAdhkarPage";
+import SalatulTasbeehPage from "@/pages/SalatulTasbeehPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -31,7 +34,6 @@ function AppRoutes() {
     );
   }
 
-  // Public share route - always accessible
   return (
     <Routes>
       <Route path="/shared/:code" element={<PublicShareView />} />
@@ -63,6 +65,9 @@ function AppContent() {
         <Route path="/quran" element={<QuranTracker />} />
         <Route path="/quran/read" element={<QuranReaderPage />} />
         <Route path="/dhikr" element={<DhikrPage />} />
+        <Route path="/streaks" element={<StreaksPage />} />
+        <Route path="/guided/:type" element={<GuidedAdhkarPage />} />
+        <Route path="/salatul-tasbeeh" element={<SalatulTasbeehPage />} />
         <Route path="/share" element={<SharePage />} />
         <Route path="/reminders" element={<RemindersPage />} />
         <Route path="/about" element={<AboutPage />} />
