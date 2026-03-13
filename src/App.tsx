@@ -40,7 +40,10 @@ function AppRoutes() {
     <Routes>
       <Route path="/shared/:code" element={<PublicShareView />} />
       {!user && !isGuest ? (
-        <Route path="*" element={<AuthPage />} />
+        <>
+          <Route path="/auth" element={<AuthPage />} />
+          <Route path="*" element={<LandingPage />} />
+        </>
       ) : (
         <Route path="*" element={
           <StoreProvider>
