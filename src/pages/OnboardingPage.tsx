@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useAuth } from '@/lib/auth-context';
 import { useStore } from '@/lib/store';
-import { supabase } from '@/integrations/supabase/client';
+import { AuthService } from '@/lib/auth-service';
 import { Moon, BookOpen, Bell, Share2, ChevronRight, ChevronLeft, Target, Sparkles, Shield } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import type { FocusArea, EnabledActivity, PrivacyMode } from '@/lib/types';
@@ -84,13 +84,13 @@ export default function OnboardingPage() {
       quranProgress: { ...prev.quranProgress, trackingStyle: quranStyle },
     }));
 
-    if (user) {
-      await supabase.from('profiles').update({
-        mode: modes.join(','),
-        quran_tracking_style: quranStyle,
+    if (user && user.id) {
+      await AuthService.updateProfile(user.id, {
+        mode: modes[0] as any,
+        quran_tracking_style: quranStyle as any,
         sharing_enabled: privacy !== 'private',
         onboarded: true,
-      }).eq('user_id', user.id);
+      });
     }
   };
 
@@ -143,9 +143,8 @@ export default function OnboardingPage() {
                   <button
                     key={opt.value}
                     onClick={() => toggleMode(opt.value)}
-                    className={`w-full text-left p-3.5 rounded-xl border transition-all ${
-                      modes.includes(opt.value) ? 'border-primary bg-primary/10' : 'border-border bg-card'
-                    }`}
+                    className={`w-full text-left p-3.5 rounded-xl border transition-all ${modes.includes(opt.value) ? 'border-primary bg-primary/10' : 'border-border bg-card'
+                      }`}
                   >
                     <p className="font-semibold text-sm">{opt.label}</p>
                     <p className="text-xs text-muted-foreground">{opt.desc}</p>
@@ -166,9 +165,8 @@ export default function OnboardingPage() {
                     <button
                       key={opt.value}
                       onClick={() => toggleFocus(opt.value)}
-                      className={`text-left p-3 rounded-xl border transition-all ${
-                        focusAreas.includes(opt.value) ? 'border-primary bg-primary/10' : 'border-border bg-card'
-                      }`}
+                      className={`text-left p-3 rounded-xl border transition-all ${focusAreas.includes(opt.value) ? 'border-primary bg-primary/10' : 'border-border bg-card'
+                        }`}
                     >
                       <p className="font-semibold text-xs">{opt.label}</p>
                       <p className="text-[10px] text-muted-foreground mt-0.5">{opt.desc}</p>
@@ -189,9 +187,8 @@ export default function OnboardingPage() {
                   <button
                     key={opt.value}
                     onClick={() => setQuranStyle(opt.value)}
-                    className={`w-full text-left p-3.5 rounded-xl border transition-all ${
-                      quranStyle === opt.value ? 'border-primary bg-primary/10' : 'border-border bg-card'
-                    }`}
+                    className={`w-full text-left p-3.5 rounded-xl border transition-all ${quranStyle === opt.value ? 'border-primary bg-primary/10' : 'border-border bg-card'
+                      }`}
                   >
                     <p className="font-semibold text-sm">{opt.label}</p>
                     <p className="text-xs text-muted-foreground">{opt.desc}</p>
@@ -212,9 +209,8 @@ export default function OnboardingPage() {
                     <button
                       key={opt.value}
                       onClick={() => toggleActivity(opt.value)}
-                      className={`text-left p-3 rounded-xl border transition-all flex items-center gap-2 ${
-                        activities.includes(opt.value) ? 'border-primary bg-primary/10' : 'border-border bg-card'
-                      }`}
+                      className={`text-left p-3 rounded-xl border transition-all flex items-center gap-2 ${activities.includes(opt.value) ? 'border-primary bg-primary/10' : 'border-border bg-card'
+                        }`}
                     >
                       <span className="text-lg">{opt.icon}</span>
                       <span className="font-medium text-xs">{opt.label}</span>
@@ -235,9 +231,8 @@ export default function OnboardingPage() {
                   <button
                     key={opt.value}
                     onClick={() => setPrivacy(opt.value)}
-                    className={`w-full text-left p-3.5 rounded-xl border transition-all ${
-                      privacy === opt.value ? 'border-primary bg-primary/10' : 'border-border bg-card'
-                    }`}
+                    className={`w-full text-left p-3.5 rounded-xl border transition-all ${privacy === opt.value ? 'border-primary bg-primary/10' : 'border-border bg-card'
+                      }`}
                   >
                     <p className="font-semibold text-sm">{opt.icon} {opt.label}</p>
                     <p className="text-xs text-muted-foreground">{opt.desc}</p>

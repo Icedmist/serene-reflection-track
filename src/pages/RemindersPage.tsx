@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useAuth } from '@/lib/auth-context';
-import { supabase } from '@/integrations/supabase/client';
+import { AuthService } from '@/lib/auth-service';
 import { Bell, Clock, Save } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { toast } from 'sonner';
@@ -41,7 +41,7 @@ export default function RemindersPage() {
       const dhikr = reminders.find(r => r.key === 'dhikr')!;
       const tahajjud = reminders.find(r => r.key === 'tahajjud')!;
 
-      await supabase.from('profiles').update({
+      await AuthService.updateProfile(user.id!, {
         reminder_fajr: fajr.enabled,
         reminder_quran: quran.enabled,
         reminder_dhikr: dhikr.enabled,
@@ -50,7 +50,7 @@ export default function RemindersPage() {
         reminder_time_quran: quran.time,
         reminder_time_dhikr: dhikr.time,
         reminder_time_tahajjud: tahajjud.time,
-      }).eq('user_id', user.id);
+      });
     }
     toast.success('Reminder settings saved!');
   };
@@ -90,13 +90,11 @@ export default function RemindersPage() {
               </div>
               <button
                 onClick={() => toggleReminder(r.key)}
-                className={`w-12 h-6 rounded-full transition-colors relative ${
-                  r.enabled ? 'bg-primary' : 'bg-secondary'
-                }`}
+                className={`w-12 h-6 rounded-full transition-colors relative ${r.enabled ? 'bg-primary' : 'bg-secondary'
+                  }`}
               >
-                <div className={`absolute top-0.5 w-5 h-5 rounded-full bg-card shadow transition-transform ${
-                  r.enabled ? 'translate-x-6' : 'translate-x-0.5'
-                }`} />
+                <div className={`absolute top-0.5 w-5 h-5 rounded-full bg-card shadow transition-transform ${r.enabled ? 'translate-x-6' : 'translate-x-0.5'
+                  }`} />
               </button>
             </div>
           </motion.div>

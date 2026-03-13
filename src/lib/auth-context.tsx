@@ -1,12 +1,12 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import type { User, Session } from '@supabase/supabase-js';
+import { db, type LocalUser } from './db';
+import { AuthService } from './auth-service';
 
 interface AuthContextType {
-  user: User | null;
-  session: Session | null;
+  user: LocalUser | null;
   loading: boolean;
   isGuest: boolean;
+  isAdmin: boolean;
   signUp: (email: string, password: string, displayName: string) => Promise<{ error: any }>;
   signIn: (email: string, password: string) => Promise<{ error: any }>;
   signOut: () => Promise<void>;
@@ -16,55 +16,54 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | null>(null);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
-  const [session, setSession] = useState<Session | null>(null);
+  const [user, setUser] = useState<LocalUser | null>(null);
   const [loading, setLoading] = useState(true);
   const [isGuest, setIsGuest] = useState(() => localStorage.getItem('ibadah-guest') === 'true');
 
   useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      if (session?.user) setIsGuest(false);
+    // Check for existing session on mount
+    AuthService.getCurrentUser().then(currentUser => {
+      setUser(currentUser);
+      if (currentUser) setIsGuest(false);
       setLoading(false);
     });
-
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      setLoading(false);
-    });
-
-    return () => subscription.unsubscribe();
   }, []);
 
   const signUp = async (email: string, password: string, displayName: string) => {
-    const { error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: { data: { display_name: displayName } },
-    });
+    const { data, error } = await AuthService.signUp(email, password, displayName);
+    if (data?.user) {
+      setUser(data.user);
+      setIsGuest(false);
+    }
     return { error };
   };
 
   const signIn = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    const { data, error } = await AuthService.signIn(email, password);
+    if (data?.user) {
+      setUser(data.user);
+      setIsGuest(false);
+    }
     return { error };
   };
 
   const signOut = async () => {
-    await supabase.auth.signOut();
+    await AuthService.signOut();
+    setUser(null);
     setIsGuest(false);
     localStorage.removeItem('ibadah-guest');
   };
 
   const enterGuestMode = () => {
     setIsGuest(true);
+    setUser(null);
     localStorage.setItem('ibadah-guest', 'true');
   };
 
+  const isAdmin = user?.role === 'admin';
+
   return (
-    <AuthContext.Provider value={{ user, session, loading, isGuest, signUp, signIn, signOut, enterGuestMode }}>
+    <AuthContext.Provider value={{ user, loading, isGuest, isAdmin, signUp, signIn, signOut, enterGuestMode }}>
       {children}
     </AuthContext.Provider>
   );

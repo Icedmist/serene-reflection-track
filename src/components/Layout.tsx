@@ -1,5 +1,5 @@
 import { NavLink, useLocation } from 'react-router-dom';
-import { LayoutDashboard, Calendar, BookOpen, Heart, Flame, Bell, Info, LogOut } from 'lucide-react';
+import { LayoutDashboard, Calendar, BookOpen, Heart, Flame, Bell, Info, LogOut, ShieldAlert } from 'lucide-react';
 import { useAuth } from '@/lib/auth-context';
 
 const navItems = [
@@ -12,7 +12,7 @@ const navItems = [
 
 export default function Layout({ children }: { children: React.ReactNode }) {
   const location = useLocation();
-  const { signOut, isGuest } = useAuth();
+  const { signOut, isGuest, isAdmin } = useAuth();
 
   return (
     <div className="min-h-screen bg-background pattern-overlay">
@@ -26,6 +26,11 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             <NavLink to="/about" className="p-2 text-muted-foreground hover:text-foreground transition-colors">
               <Info className="w-4 h-4" />
             </NavLink>
+            {isAdmin && (
+              <NavLink to="/admin" className="p-2 text-primary hover:text-primary/80 transition-colors" title="Admin Panel">
+                <ShieldAlert className="w-4 h-4" />
+              </NavLink>
+            )}
             <button onClick={signOut} className="p-2 text-muted-foreground hover:text-foreground transition-colors" title={isGuest ? 'Exit guest' : 'Sign out'}>
               <LogOut className="w-4 h-4" />
             </button>
@@ -45,9 +50,8 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               <NavLink
                 key={to}
                 to={to}
-                className={`flex flex-col items-center gap-0.5 px-2 py-1 rounded-lg transition-colors min-w-[48px] min-h-[44px] justify-center ${
-                  active ? 'text-primary' : 'text-muted-foreground hover:text-foreground'
-                }`}
+                className={`flex flex-col items-center gap-0.5 px-2 py-1 rounded-lg transition-colors min-w-[48px] min-h-[44px] justify-center ${active ? 'text-primary' : 'text-muted-foreground hover:text-foreground'
+                  }`}
               >
                 <Icon className={`w-5 h-5 ${active ? 'stroke-[2.5]' : ''}`} />
                 <span className="text-[9px] font-medium">{label}</span>

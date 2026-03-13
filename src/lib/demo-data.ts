@@ -35,96 +35,48 @@ const DEFAULT_DHIKR: DhikrCounter[] = [
   { id: 'lailaha', name: 'Tahlil', nameAr: 'لا إله إلا الله', count: 0, target: 100 },
 ];
 
-function createDayLog(ramadanDay: number, date: string, completionRate: number): DayLog {
-  const tasks = ITIKAF_TEMPLATE.map(t => ({
-    ...t,
-    completed: Math.random() < completionRate,
-    notes: '',
-  }));
-  const completedCount = tasks.filter(t => t.completed).length;
-  const dhikr = DEFAULT_DHIKR.map(d => ({
-    ...d,
-    count: Math.floor(d.target * completionRate * (0.7 + Math.random() * 0.3)),
-  }));
-  return {
-    date,
-    ramadanDay,
-    tasks,
-    dhikr,
-    completionPercent: Math.round((completedCount / tasks.length) * 100),
-    morningAdhkar: MORNING_ADHKAR_TEMPLATE.map(a => ({
-      ...a,
-      completed: Math.random() < completionRate,
-      count: Math.random() < completionRate ? a.target : 0,
-    })),
-    eveningAdhkar: EVENING_ADHKAR_TEMPLATE.map(a => ({
-      ...a,
-      completed: Math.random() < completionRate,
-      count: Math.random() < completionRate ? a.target : 0,
-    })),
-  };
-}
-
-export function generateDemoState(): AppState {
+export function generateInitialState(): AppState {
+  const todayStr = new Date().toISOString().split('T')[0];
   const days: Record<string, DayLog> = {};
-  const baseDate = new Date(2025, 2, 1);
 
-  for (let i = 1; i <= 22; i++) {
-    const date = new Date(baseDate);
-    date.setDate(date.getDate() + i - 1);
-    const dateStr = date.toISOString().split('T')[0];
-    const rate = i <= 5 ? 0.6 + Math.random() * 0.3 : i <= 15 ? 0.75 + Math.random() * 0.2 : 0.85 + Math.random() * 0.15;
-    days[dateStr] = createDayLog(i, dateStr, rate);
-  }
-
-  const todayDate = new Date(baseDate);
-  todayDate.setDate(todayDate.getDate() + 21);
-  const todayStr = todayDate.toISOString().split('T')[0];
-  const todayTasks = ITIKAF_TEMPLATE.map((t, i) => ({
-    ...t,
-    completed: i < 12,
-    notes: '',
-  }));
   days[todayStr] = {
     date: todayStr,
-    ramadanDay: 22,
-    tasks: todayTasks,
-    dhikr: DEFAULT_DHIKR.map(d => ({ ...d, count: Math.floor(d.target * 0.6) })),
-    reflectionNote: 'Alhamdulillah, feeling more focused in salah today. The night prayers felt deeply connected.',
-    completionPercent: Math.round((12 / ITIKAF_TEMPLATE.length) * 100),
-    morningAdhkar: MORNING_ADHKAR_TEMPLATE.map(a => ({ ...a, completed: false })),
-    eveningAdhkar: EVENING_ADHKAR_TEMPLATE.map(a => ({ ...a, completed: false })),
+    ramadanDay: 1,
+    tasks: ITIKAF_TEMPLATE.map(t => ({ ...t, completed: false, notes: '' })),
+    dhikr: DEFAULT_DHIKR,
+    completionPercent: 0,
+    morningAdhkar: MORNING_ADHKAR_TEMPLATE.map(a => ({ ...a, completed: false, count: 0 })),
+    eveningAdhkar: EVENING_ADHKAR_TEMPLATE.map(a => ({ ...a, completed: false, count: 0 })),
   };
 
   return {
-    userName: 'Abdullah',
-    currentRamadanDay: 22,
-    mode: ['itikaf', 'ramadan'],
-    focusAreas: ['quran', 'night_prayers', 'balanced'],
-    enabledActivities: ['morning_adhkar', 'evening_adhkar', 'tahajjud', 'taraweeh', 'tafseer', 'salatul_tasbeeh', 'reflections'],
-    privacyMode: 'share_streaks',
+    userName: 'User',
+    currentRamadanDay: 1,
+    mode: ['ramadan'],
+    focusAreas: ['balanced'],
+    enabledActivities: ['morning_adhkar', 'evening_adhkar', 'tahajjud', 'taraweeh', 'reflections'],
+    privacyMode: 'private',
     quranProgress: {
       trackingStyle: 'surah',
       startSurah: 1,
-      currentSurah: 7,
+      currentSurah: 1,
       currentAyah: 1,
       startJuz: 1,
-      currentJuz: 8,
+      currentJuz: 1,
       currentPage: 1,
       dailyLogs: [],
     },
     days,
     streaks: [
-      { habit: 'Tahajjud', currentStreak: 18, longestStreak: 18, icon: '🌙' },
-      { habit: 'Taraweeh', currentStreak: 22, longestStreak: 22, icon: '🕌' },
-      { habit: 'Qur\'an', currentStreak: 15, longestStreak: 15, icon: '📖' },
-      { habit: 'Tafseer', currentStreak: 10, longestStreak: 12, icon: '📚' },
-      { habit: 'Fajr on Time', currentStreak: 22, longestStreak: 22, icon: '🌅' },
+      { habit: 'Tahajjud', currentStreak: 0, longestStreak: 0, icon: '🌙' },
+      { habit: 'Taraweeh', currentStreak: 0, longestStreak: 0, icon: '🕌' },
+      { habit: 'Qur\'an', currentStreak: 0, longestStreak: 0, icon: '📖' },
+      { habit: 'Fajr on Time', currentStreak: 0, longestStreak: 0, icon: '🌅' },
     ],
     duas: [],
-    sharingEnabled: true,
-    onboarded: true,
-    totalXp: 1250,
+    sharingEnabled: false,
+    onboarded: false,
+    totalXp: 0,
   };
 }
 

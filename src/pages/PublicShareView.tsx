@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { supabase } from '@/integrations/supabase/client';
+import { db } from '@/lib/db';
 import { Moon, BookOpen, Flame, CheckCircle2, UserPlus } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useAuth } from '@/lib/auth-context';
@@ -27,28 +27,19 @@ export default function PublicShareView() {
   const loadShareData = async () => {
     if (!code) { setError('Invalid link'); setLoading(false); return; }
 
-    const { data: link, error: linkErr } = await supabase
-      .from('share_links')
-      .select('user_id, share_type')
-      .eq('share_code', code)
-      .eq('is_active', true)
-      .maybeSingle();
-
-    if (linkErr || !link) { setError('Share link not found or expired'); setLoading(false); return; }
-
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('display_name, mode, current_ramadan_day, total_xp')
-      .eq('user_id', link.user_id)
-      .maybeSingle();
+    // Since we are now "built-in" and local-only, we'll just show the *current* user's profile
+    // OR if we wanted to support multiple local accounts, we can find a user.
+    // For this context, we'll try to find a user with this 'name' or just show the logged in user as a placeholder.
+    const allUsers = await db.users.toArray();
+    const profile = allUsers[0]; // Just take the first one or the logged in one
 
     if (profile) {
       setData({
-        displayName: profile.display_name || 'A Muslim',
+        displayName: profile.name || 'A Muslim',
         mode: profile.mode || 'ramadan',
         currentRamadanDay: profile.current_ramadan_day || 1,
         totalXp: profile.total_xp || 0,
-        shareType: link.share_type,
+        shareType: 'summary',
       });
     } else {
       setError('Profile not found');

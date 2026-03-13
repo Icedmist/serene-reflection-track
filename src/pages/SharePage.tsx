@@ -1,6 +1,6 @@
 import { useStore } from '@/lib/store';
 import { useAuth } from '@/lib/auth-context';
-import { supabase } from '@/integrations/supabase/client';
+import { db } from '@/lib/db';
 import { SURAH_NAMES } from '@/lib/types';
 import { useRef, useState } from 'react';
 import { toPng } from 'html-to-image';
@@ -49,20 +49,12 @@ export default function SharePage() {
       return;
     }
     setGeneratingLink(true);
-    const { data, error } = await supabase
-      .from('share_links')
-      .insert({ user_id: user.id, share_type: cardStyle })
-      .select('share_code')
-      .single();
-    
-    if (data) {
-      const url = `${window.location.origin}/shared/${data.share_code}`;
-      setShareLink(url);
-      navigator.clipboard.writeText(url);
-      toast.success('Share link copied!');
-    } else {
-      toast.error('Failed to create link');
-    }
+    // Locally generate a share code for this user
+    const shareCode = Math.random().toString(36).substring(2, 10);
+    const url = `${window.location.origin}/shared/${shareCode}`;
+    setShareLink(url);
+    navigator.clipboard.writeText(url);
+    toast.success('Local share link generated!');
     setGeneratingLink(false);
   };
 
@@ -79,9 +71,8 @@ export default function SharePage() {
           <button
             key={s}
             onClick={() => setCardStyle(s)}
-            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
-              cardStyle === s ? 'bg-primary text-primary-foreground' : 'bg-secondary text-secondary-foreground'
-            }`}
+            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${cardStyle === s ? 'bg-primary text-primary-foreground' : 'bg-secondary text-secondary-foreground'
+              }`}
           >
             {s === 'summary' ? 'Summary' : s === 'quran' ? "Qur'an" : 'Streaks'}
           </button>

@@ -1,73 +1,34 @@
-# Welcome to your Lovable project
+# Serene Reflection Track 🌙
 
-## Project info
+> "Indeed, in the remembrance of Allah do hearts find rest." (Qur'an 13:28)
 
-**URL**: https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID
+Welcome to **Serene Reflection Track**, a personal space designed to nurture spiritual growth, mindfulness, and consistency in worship. This application was crafted with a focus on transition and devotion, particularly during the blessed days of Ramadan and the focused seclusion of Itikaf.
 
-## How can I edit this code?
+## My Journey
 
-There are several ways of editing your application.
+This project is more than just a tracker; it's a companion for the soul. It was built to solve the challenge of maintaining focus and tracking progress in a way that feels organic and spiritually uplifting. Whether it's the quiet moments after Fajr or the deep reflections of the night, this app is here to hold that space.
 
-**Use Lovable**
+## Reflective Features
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and start prompting.
+- **📖 Quran Heartbeat**: Track your recitation by Surah or Juz, keeping your heart connected to the Divine words.
+- **📿 Mindful Dhikr**: A digital tasbih to keep your tongue moist with remembrance, with templates for morning and evening adhkar.
+- **🕌 Devotional Log**: Specialized templates for Ramadan and Itikaf, helping you balance Salah, rest, and reflection.
+- **✨ Daily Reflections**: A private space to record thoughts, du'as, and moments of gratitude.
+- **📈 Growth Streaks**: Visualizing consistency to encourage a lifelong habit of devotion.
 
-Changes made via Lovable will be committed automatically to this repo.
+## Design Philosophy
 
-**Use your preferred IDE**
+The interface is built to be "serene"—minimalist, focused, and free from the distractions of the modern web. Using a soft, reflective color palette and smooth animations, the goal is to create an environment that feels like a digital masjid.
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+## Technical Foundation
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+While heart-centered, the app is built on a modern, robust stack:
 
-Follow these steps:
+- **Frontend**: React with TypeScript for stability.
+- **Styling**: Tailwind CSS & shadcn/ui for a premium, custom feel.
+- **Persistence**: Dexie.js (IndexedDB) for local-first, private data storage.
+- **Animation**: Framer Motion for smooth, intentional transitions.
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+---
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
-```
-
-**Edit a file directly in GitHub**
-
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
-
-**Use GitHub Codespaces**
-
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
-
-## What technologies are used for this project?
-
-This project is built with:
-
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
-
-## How can I deploy this project?
-
-Simply open [Lovable](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and click on Share -> Publish.
-
-## Can I connect a custom domain to my Lovable project?
-
-Yes, you can!
-
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
-
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+*Peace and blessings on this journey of reflection.*

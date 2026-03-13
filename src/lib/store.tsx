@@ -1,8 +1,8 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { AppState, DayLog, DhikrCounter, DuaEntry, QuranSession, AdhkarMicrotask, MORNING_ADHKAR_TEMPLATE, EVENING_ADHKAR_TEMPLATE } from './types';
-import { generateDemoState, ITIKAF_TEMPLATE, DEFAULT_DHIKR } from './demo-data';
+import { generateInitialState, ITIKAF_TEMPLATE, DEFAULT_DHIKR } from './demo-data';
 
-const STORAGE_KEY = 'ibadahtrack-state';
+const STORAGE_KEY = 'ibadahtrack-v1';
 
 interface StoreContextType {
   state: AppState;
@@ -55,8 +55,8 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
         if (!parsed.quranProgress.currentPage) parsed.quranProgress.currentPage = 1;
         return parsed;
       }
-    } catch {}
-    return generateDemoState();
+    } catch { }
+    return generateInitialState();
   });
 
   useEffect(() => {
@@ -109,7 +109,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   const getDayLog = useCallback((date: string) => state.days[date], [state.days]);
 
   const resetDemo = useCallback(() => {
-    const fresh = generateDemoState();
+    const fresh = generateInitialState();
     setState(fresh);
   }, []);
 
