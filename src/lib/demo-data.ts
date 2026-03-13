@@ -77,6 +77,8 @@ export function generateInitialState(): AppState {
     sharingEnabled: false,
     onboarded: false,
     totalXp: 0,
+    hijriOffset: 0,
+    calculationMethod: 'standard',
   };
 }
 

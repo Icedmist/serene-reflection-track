@@ -20,6 +20,8 @@ export interface LocalUser {
     onboarded: boolean;
     current_ramadan_day: number;
     total_xp: number;
+    hijri_offset: number;
+    calculation_method: string;
     created_at: Date;
     updated_at: Date;
 }
@@ -90,6 +92,8 @@ export async function seedAdmin() {
             onboarded: true,
             current_ramadan_day: 1,
             total_xp: 0,
+            hijri_offset: 0,
+            calculation_method: 'standard',
             created_at: new Date(),
             updated_at: new Date()
         });

@@ -2,7 +2,7 @@ import React, { createContext, useContext, useState, useEffect, useCallback } fr
 import { AppState, DayLog, DhikrCounter, DuaEntry, QuranSession, AdhkarMicrotask, MORNING_ADHKAR_TEMPLATE, EVENING_ADHKAR_TEMPLATE } from './types';
 import { generateInitialState, ITIKAF_TEMPLATE, DEFAULT_DHIKR } from './demo-data';
 
-const STORAGE_KEY = 'ibadahtrack-v1';
+const STORAGE_KEY = 'ibadahtrack-v2';
 
 interface StoreContextType {
   state: AppState;
@@ -25,6 +25,7 @@ interface StoreContextType {
   toggleDuaAnswered: (id: string) => void;
   removeDua: (id: string) => void;
   addXp: (amount: number) => void;
+  updateHijriOffset: (offset: number) => void;
 }
 
 const StoreContext = createContext<StoreContextType | null>(null);
@@ -51,6 +52,8 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
         if (!parsed.privacyMode) parsed.privacyMode = 'private';
         if (!parsed.duas) parsed.duas = [];
         if (parsed.totalXp === undefined) parsed.totalXp = 0;
+        if (parsed.hijriOffset === undefined) parsed.hijriOffset = 0;
+        if (parsed.calculationMethod === undefined) parsed.calculationMethod = 'standard';
         if (!parsed.quranProgress.currentAyah) parsed.quranProgress.currentAyah = 1;
         if (!parsed.quranProgress.currentPage) parsed.quranProgress.currentPage = 1;
         return parsed;
@@ -225,12 +228,16 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     setState(prev => ({ ...prev, totalXp: prev.totalXp + amount }));
   }, []);
 
+  const updateHijriOffset = useCallback((offset: number) => {
+    setState(prev => ({ ...prev, hijriOffset: offset }));
+  }, []);
+
   return (
     <StoreContext.Provider value={{
       state, setState, todayLog, toggleTask, updateDhikr, updateReflection, updateQuranSurah,
       getDayLog, resetDemo, updateAdhkar, markAdhkarSetComplete,
       startQuranSession, pauseQuranSession, resumeQuranSession, completeQuranSession, saveQuranStopPoint,
-      addDua, toggleDuaAnswered, removeDua, addXp,
+      addDua, toggleDuaAnswered, removeDua, addXp, updateHijriOffset,
     }}>
       {children}
     </StoreContext.Provider>

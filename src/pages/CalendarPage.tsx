@@ -1,16 +1,20 @@
 import { useStore } from '@/lib/store';
 import { useState } from 'react';
-import { ChevronLeft, ChevronRight, CheckCircle2, Circle, Star } from 'lucide-react';
+import { ChevronLeft, ChevronRight, CheckCircle2, Circle, Star, Settings2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { HijriUtils } from '@/lib/hijri-utils';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Button } from '@/components/ui/button';
+import { Slider } from '@/components/ui/slider';
 
 const MONTH_NAMES = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 const DAY_NAMES = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
 const ODD_NIGHTS = [21, 23, 25, 27, 29];
 
 export default function CalendarPage() {
-  const { state, getDayLog } = useStore();
-  const [currentMonth, setCurrentMonth] = useState(2);
-  const [currentYear] = useState(2025);
+  const { state, getDayLog, updateHijriOffset } = useStore();
+  const [currentMonth, setCurrentMonth] = useState(new Date().getMonth());
+  const [currentYear] = useState(new Date().getFullYear());
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
 
   const firstDay = new Date(currentYear, currentMonth, 1).getDay();
@@ -34,14 +38,54 @@ export default function CalendarPage() {
     <div className="px-4 pt-6 space-y-4">
       <h1 className="text-lg font-bold gold-text">Calendar</h1>
 
-      <div className="flex items-center justify-between glass-card px-3 py-2.5">
-        <button onClick={() => setCurrentMonth(m => Math.max(0, m - 1))} className="p-1 text-muted-foreground hover:text-foreground">
-          <ChevronLeft className="w-4 h-4" />
-        </button>
-        <span className="text-sm font-semibold">{MONTH_NAMES[currentMonth]} {currentYear}</span>
-        <button onClick={() => setCurrentMonth(m => Math.min(11, m + 1))} className="p-1 text-muted-foreground hover:text-foreground">
-          <ChevronRight className="w-4 h-4" />
-        </button>
+      <div className="flex items-center justify-between gap-2">
+        <div className="flex items-center gap-2 bg-secondary/30 rounded-lg px-3 py-2 flex-1">
+          <button onClick={() => setCurrentMonth(m => m === 0 ? 11 : m - 1)} className="p-1 text-muted-foreground hover:text-foreground">
+            <ChevronLeft className="w-4 h-4" />
+          </button>
+          <div className="flex-1 text-center">
+            <p className="text-sm font-semibold">{MONTH_NAMES[currentMonth]} {currentYear}</p>
+            <p className="text-[10px] text-muted-foreground">{HijriUtils.getHijriMonthRange(currentYear, currentMonth, state.hijriOffset)}</p>
+          </div>
+          <button onClick={() => setCurrentMonth(m => m === 11 ? 0 : m + 1)} className="p-1 text-muted-foreground hover:text-foreground">
+            <ChevronRight className="w-4 h-4" />
+          </button>
+        </div>
+
+        <Popover>
+          <PopoverTrigger asChild>
+            <Button variant="ghost" size="icon" className="glass-card h-10 w-10">
+              <Settings2 className="w-4 h-4" />
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-64 glass-card border-primary/20 p-4">
+            <div className="space-y-4">
+              <div className="space-y-1.5">
+                <h4 className="text-sm font-semibold gold-text">Regional Settings</h4>
+                <p className="text-[10px] text-muted-foreground">Adjust Hijri date based on your local moon sighting.</p>
+              </div>
+              <div className="space-y-3">
+                <div className="flex items-center justify-between text-xs">
+                  <span>Hijri Offset</span>
+                  <span className="font-mono bg-secondary px-1.5 py-0.5 rounded">{state.hijriOffset > 0 ? `+${state.hijriOffset}` : state.hijriOffset} days</span>
+                </div>
+                <Slider
+                  value={[state.hijriOffset]}
+                  min={-2}
+                  max={2}
+                  step={1}
+                  onValueChange={([val]) => updateHijriOffset(val)}
+                  className="py-2"
+                />
+                <div className="flex justify-between text-[8px] text-muted-foreground">
+                  <span>-2d</span>
+                  <span>Standard</span>
+                  <span>+2d</span>
+                </div>
+              </div>
+            </div>
+          </PopoverContent>
+        </Popover>
       </div>
 
       <div className="glass-card p-2.5">
@@ -59,19 +103,21 @@ export default function CalendarPage() {
             const dateStr = getDateStr(day);
             const isSelected = selectedDate === dateStr;
 
+            const hParts = HijriUtils.getHijriParts(new Date(currentYear, currentMonth, day), state.hijriOffset);
+
             return (
               <button
                 key={day}
                 onClick={() => setSelectedDate(dateStr)}
-                className={`relative aspect-square rounded-lg flex flex-col items-center justify-center text-[11px] transition-all ${
-                  isSelected ? 'ring-2 ring-primary bg-primary/10' :
-                  status === 'complete' ? 'bg-accent/15' :
-                  status === 'partial' ? 'bg-primary/10' :
-                  status === 'missed' ? 'bg-destructive/10' : 'bg-secondary/30'
-                }`}
+                className={`relative aspect-square rounded-lg flex flex-col items-center justify-center transition-all ${isSelected ? 'ring-2 ring-primary bg-primary/10' :
+                    status === 'complete' ? 'bg-accent/15' :
+                      status === 'partial' ? 'bg-primary/10' :
+                        status === 'missed' ? 'bg-destructive/10' : 'bg-secondary/30'
+                  }`}
               >
-                <span className={`font-medium ${status === 'complete' ? 'text-accent' : status === 'partial' ? 'gold-text' : ''}`}>{day}</span>
-                {rDay && <span className="text-[7px] text-muted-foreground leading-none">R{rDay}</span>}
+                <span className={`text-[11px] font-medium ${status === 'complete' ? 'text-accent' : status === 'partial' ? 'gold-text' : ''}`}>{day}</span>
+                <span className="text-[8px] text-primary/70 font-bold leading-none mt-0.5">{hParts.day}</span>
+                {rDay && <span className="text-[7px] text-muted-foreground/60 leading-none mt-0.5">R{rDay}</span>}
                 {isOdd && <Star className="absolute top-0 right-0 w-2 h-2 text-primary fill-primary" />}
                 {status === 'complete' && <div className="absolute bottom-0.5 w-1 h-1 rounded-full bg-accent" />}
               </button>

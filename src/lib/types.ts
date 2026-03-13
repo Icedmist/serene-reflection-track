@@ -100,6 +100,8 @@ export interface AppState {
   sharingEnabled: boolean;
   onboarded: boolean;
   totalXp: number;
+  hijriOffset: number;
+  calculationMethod: string;
 }
 
 export const SURAH_NAMES: Record<number, string> = {
