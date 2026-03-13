@@ -215,7 +215,7 @@ export default function CommunityPage() {
             ) : (
               <div className="space-y-2">
                 {leaderboard.map((entry, i) => {
-                  const isCurrentUser = entry.user_id === user?.id;
+                  const isCurrentUser = entry.user_id === String(user?.id);
                   return (
                     <motion.div
                       key={entry.user_id}
