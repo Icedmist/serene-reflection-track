@@ -7,6 +7,7 @@ import { StoreProvider, useStore } from "@/lib/store";
 import Layout from "@/components/Layout";
 import AuthPage from "@/pages/AuthPage";
 import OnboardingPage from "@/pages/OnboardingPage";
+import LandingPage from "@/pages/LandingPage";
 import Dashboard from "@/pages/Dashboard";
 import CalendarPage from "@/pages/CalendarPage";
 import QuranTracker from "@/pages/QuranTracker";
@@ -39,7 +40,10 @@ function AppRoutes() {
     <Routes>
       <Route path="/shared/:code" element={<PublicShareView />} />
       {!user && !isGuest ? (
-        <Route path="*" element={<AuthPage />} />
+        <>
+          <Route path="/auth" element={<AuthPage />} />
+          <Route path="*" element={<LandingPage />} />
+        </>
       ) : (
         <Route path="*" element={
           <StoreProvider>
