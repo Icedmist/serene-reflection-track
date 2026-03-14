@@ -97,7 +97,7 @@ export default function CommunityPage() {
     setSending(true);
     const { error } = await supabase.from('community_messages').insert([{
       user_id: String(user.id),
-      display_name: state.userName || user.name || 'Anonymous',
+      display_name: state.userName || 'Anonymous',
       message: newMessage.trim(),
       message_type: 'chat',
     }]);
@@ -117,7 +117,7 @@ export default function CommunityPage() {
     const msg = ENCOURAGEMENTS[Math.floor(Math.random() * ENCOURAGEMENTS.length)];
     await supabase.from('community_messages').insert([{
       user_id: String(user.id),
-      display_name: state.userName || user.name || 'Anonymous',
+      display_name: state.userName || 'Anonymous',
       message: msg,
       message_type: 'encouragement',
     }]);

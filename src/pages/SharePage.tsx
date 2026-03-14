@@ -1,10 +1,10 @@
 import { useStore } from '@/lib/store';
 import { useAuth } from '@/lib/auth-context';
-import { db } from '@/lib/db';
+import { supabase } from '@/integrations/supabase/client';
 import { SURAH_NAMES } from '@/lib/types';
 import { useRef, useState } from 'react';
 import { toPng } from 'html-to-image';
-import { Share2, Download, Moon, Copy, Check, Link2, ExternalLink } from 'lucide-react';
+import { Share2, Download, Moon, Copy, Check, Link2, ExternalLink, Users } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { toast } from 'sonner';
 
@@ -26,20 +26,42 @@ export default function SharePage() {
     setDownloading(true);
     try {
       const dataUrl = await toPng(cardRef.current, { pixelRatio: 3, backgroundColor: '#111827' });
-      const link = document.createElement('a');
-      link.download = `ibadahtrack-day${state.currentRamadanDay}.png`;
-      link.href = dataUrl;
-      link.click();
+
+      if (navigator.share) {
+        const blob = await (await fetch(dataUrl)).blob();
+        const file = new File([blob], 'ibadahtrack-progress.png', { type: 'image/png' });
+        await navigator.share({
+          title: 'My IbadahTrack Progress',
+          text: `Join me on IbadahTrack! 🌙 ${window.location.origin}`,
+          files: [file],
+        });
+      } else {
+        const link = document.createElement('a');
+        link.download = `ibadahtrack-day${state.currentRamadanDay}.png`;
+        link.href = dataUrl;
+        link.click();
+        toast.success('Card downloaded!');
+      }
     } catch (e) {
-      console.error('Failed to generate image', e);
+      // Fallback download
+      try {
+        const dataUrl = await toPng(cardRef.current!, { pixelRatio: 3, backgroundColor: '#111827' });
+        const link = document.createElement('a');
+        link.download = `ibadahtrack-day${state.currentRamadanDay}.png`;
+        link.href = dataUrl;
+        link.click();
+        toast.success('Card downloaded!');
+      } catch { }
     }
     setDownloading(false);
   };
 
   const handleCopyText = () => {
-    const shareText = `Ramadan Day ${state.currentRamadanDay} — ${todayLog.completionPercent}% complete. ${completedTasks.length} tasks done. Qur'an: Surah ${SURAH_NAMES[state.quranProgress.currentSurah]}. #IbadahTrack`;
+    const joinLink = `${window.location.origin}`;
+    const shareText = `🌙 Ramadan Day ${state.currentRamadanDay} — ${todayLog.completionPercent}% complete!\n${completedTasks.length} tasks done. Qur'an: Surah ${SURAH_NAMES[state.quranProgress.currentSurah]}.\n\nJoin me on IbadahTrack: ${joinLink}\n#IbadahTrack`;
     navigator.clipboard.writeText(shareText);
     setCopied(true);
+    toast.success('Copied with referral link!');
     setTimeout(() => setCopied(false), 2000);
   };
 
@@ -49,21 +71,37 @@ export default function SharePage() {
       return;
     }
     setGeneratingLink(true);
-    // Locally generate a share code for this user
-    const shareCode = Math.random().toString(36).substring(2, 10);
-    const url = `${window.location.origin}/shared/${shareCode}`;
-    setShareLink(url);
-    navigator.clipboard.writeText(url);
-    toast.success('Local share link generated!');
+    try {
+      // Create share link in database
+      const { data, error } = await supabase.from('share_links').insert([{
+        user_id: user.id,
+        share_type: cardStyle,
+      }]).select('share_code').single();
+
+      if (error) throw error;
+
+      const url = `${window.location.origin}/shared/${data.share_code}`;
+      setShareLink(url);
+      await navigator.clipboard.writeText(url);
+      toast.success('Referral link copied! Share on WhatsApp, Instagram, etc.');
+    } catch (e) {
+      console.error(e);
+      // Fallback local link
+      const shareCode = Math.random().toString(36).substring(2, 10);
+      const url = `${window.location.origin}/shared/${shareCode}`;
+      setShareLink(url);
+      await navigator.clipboard.writeText(url);
+      toast.success('Share link generated!');
+    }
     setGeneratingLink(false);
   };
 
   return (
-    <div className="px-4 pt-6 space-y-5">
+    <div className="px-4 pt-6 space-y-5 pb-6">
       <h1 className="text-xl font-bold gold-text flex items-center gap-2">
         <Share2 className="w-5 h-5" /> Share Progress
       </h1>
-      <p className="text-xs text-muted-foreground">Share your worship journey as Sadaqah Jariyah — inspire others</p>
+      <p className="text-xs text-muted-foreground">Share your journey as Sadaqah Jariyah — invite others to join!</p>
 
       {/* Card style selector */}
       <div className="flex gap-2">
@@ -71,8 +109,7 @@ export default function SharePage() {
           <button
             key={s}
             onClick={() => setCardStyle(s)}
-            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${cardStyle === s ? 'bg-primary text-primary-foreground' : 'bg-secondary text-secondary-foreground'
-              }`}
+            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${cardStyle === s ? 'bg-primary text-primary-foreground' : 'bg-secondary text-secondary-foreground'}`}
           >
             {s === 'summary' ? 'Summary' : s === 'quran' ? "Qur'an" : 'Streaks'}
           </button>
@@ -153,7 +190,13 @@ export default function SharePage() {
             </div>
           )}
 
-          <p className="text-center" style={{ fontSize: 10, color: '#666', paddingTop: 8 }}>
+          {/* Referral CTA */}
+          <div className="text-center" style={{ background: 'rgba(212,168,67,0.1)', borderRadius: 8, padding: '10px' }}>
+            <p style={{ fontSize: 11, color: '#d4a843', fontWeight: 600 }}>✨ Join IbadahTrack — Your Worship Companion</p>
+            <p style={{ fontSize: 9, color: '#a0937d', marginTop: 4 }}>{window.location.origin}</p>
+          </div>
+
+          <p className="text-center" style={{ fontSize: 10, color: '#666', paddingTop: 4 }}>
             بسم الله الرحمن الرحيم • Shared as Sadaqah Jariyah
           </p>
         </div>
@@ -167,7 +210,7 @@ export default function SharePage() {
           className="flex-1 flex items-center justify-center gap-2 bg-primary text-primary-foreground rounded-xl py-3 font-medium text-sm hover:opacity-90 transition-opacity disabled:opacity-50"
         >
           <Download className="w-4 h-4" />
-          {downloading ? 'Generating...' : 'Download Card'}
+          {downloading ? 'Generating...' : 'Download & Share'}
         </button>
         <button
           onClick={handleCopyText}
@@ -177,24 +220,48 @@ export default function SharePage() {
         </button>
       </div>
 
-      {/* Generate share link */}
+      {/* Generate Referral Link */}
       <div className="glass-card p-4 space-y-3">
         <h3 className="text-sm font-semibold flex items-center gap-2">
-          <Link2 className="w-4 h-4 text-primary" /> Public Share Link
+          <Users className="w-4 h-4 text-primary" /> Referral Link
         </h3>
-        <p className="text-xs text-muted-foreground">Generate a link anyone can view — they'll see your progress and can join too!</p>
+        <p className="text-xs text-muted-foreground">Generate a link to share on WhatsApp, Instagram, Twitter, or any social media. When someone clicks, they can join IbadahTrack!</p>
         <button
           onClick={handleGenerateLink}
           disabled={generatingLink}
           className="w-full py-3 bg-accent text-accent-foreground rounded-xl font-semibold text-sm flex items-center justify-center gap-2 hover:opacity-90 transition-opacity disabled:opacity-50"
         >
           <ExternalLink className="w-4 h-4" />
-          {generatingLink ? 'Generating...' : 'Generate Share Link'}
+          {generatingLink ? 'Generating...' : 'Generate Referral Link'}
         </button>
         {shareLink && (
-          <div className="bg-secondary/50 rounded-lg p-3">
-            <p className="text-xs text-muted-foreground mb-1">Link copied to clipboard:</p>
+          <div className="bg-secondary/50 rounded-lg p-3 space-y-2">
+            <p className="text-[10px] text-muted-foreground">Link copied! Share on:</p>
             <p className="text-xs font-mono text-foreground break-all">{shareLink}</p>
+            <div className="flex gap-2">
+              <a
+                href={`https://wa.me/?text=${encodeURIComponent(`Join me on IbadahTrack! 🌙 ${shareLink}`)}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex-1 py-2 bg-accent/10 text-accent rounded-lg text-[10px] font-medium text-center"
+              >
+                WhatsApp
+              </a>
+              <a
+                href={`https://twitter.com/intent/tweet?text=${encodeURIComponent(`Join me on IbadahTrack! 🌙 ${shareLink} #IbadahTrack`)}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex-1 py-2 bg-primary/10 text-primary rounded-lg text-[10px] font-medium text-center"
+              >
+                Twitter/X
+              </a>
+              <button
+                onClick={() => { navigator.clipboard.writeText(shareLink); toast.success('Link copied!'); }}
+                className="flex-1 py-2 bg-secondary text-secondary-foreground rounded-lg text-[10px] font-medium"
+              >
+                Copy Again
+              </button>
+            </div>
           </div>
         )}
       </div>

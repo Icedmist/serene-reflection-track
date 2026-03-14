@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useAuth } from '@/lib/auth-context';
 import { Moon, Mail, Lock, User, Eye, EyeOff } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { toast } from 'sonner';
 
 export default function AuthPage() {
   const { signIn, signUp, enterGuestMode } = useAuth();
@@ -12,6 +13,7 @@ export default function AuthPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [signupSuccess, setSignupSuccess] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -24,10 +26,35 @@ export default function AuthPage() {
     } else {
       if (!name.trim()) { setError('Please enter your name'); setLoading(false); return; }
       const { error } = await signUp(email, password, name);
-      if (error) setError(error.message);
+      if (error) {
+        setError(error.message);
+      } else {
+        setSignupSuccess(true);
+        toast.success('Account created! Check your email to verify.');
+      }
     }
     setLoading(false);
   };
+
+  if (signupSuccess) {
+    return (
+      <div className="min-h-screen bg-background pattern-overlay flex flex-col items-center justify-center px-6">
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="w-full max-w-sm space-y-6 text-center">
+          <div className="w-16 h-16 mx-auto rounded-2xl bg-accent/10 flex items-center justify-center">
+            <Mail className="w-8 h-8 text-accent" />
+          </div>
+          <h1 className="text-xl font-bold gold-text">Check Your Email</h1>
+          <p className="text-sm text-muted-foreground">We've sent a verification link to <strong>{email}</strong>. Click the link to activate your account.</p>
+          <button
+            onClick={() => { setSignupSuccess(false); setIsLogin(true); }}
+            className="w-full py-3 bg-primary text-primary-foreground rounded-xl font-semibold text-sm"
+          >
+            Back to Sign In
+          </button>
+        </motion.div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background pattern-overlay flex flex-col items-center justify-center px-6">
@@ -42,7 +69,7 @@ export default function AuthPage() {
             <Moon className="w-8 h-8 text-primary" />
           </div>
           <h1 className="text-2xl font-bold gold-text gold-glow">IbadahTrack</h1>
-          <p className="text-sm text-muted-foreground">Your Ramadan worship companion</p>
+          <p className="text-sm text-muted-foreground">Your worship companion</p>
         </div>
 
         {/* Form */}

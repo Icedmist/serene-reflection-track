@@ -1,7 +1,9 @@
 import { useStore } from '@/lib/store';
+import { useAuth } from '@/lib/auth-context';
 import { SURAH_NAMES, TIME_BLOCK_LABELS, TIME_BLOCK_ORDER } from '@/lib/types';
+import { HijriUtils } from '@/lib/hijri-utils';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Moon, Flame, BookOpen, CheckCircle2, Circle, PenLine, ChevronRight, ChevronDown, Trophy } from 'lucide-react';
+import { Moon, Flame, BookOpen, CheckCircle2, Circle, PenLine, ChevronDown, Trophy, Plus, X, Edit3, Save, Calendar } from 'lucide-react';
 import { useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 
@@ -16,18 +18,37 @@ const categoryColors: Record<string, string> = {
 };
 
 export default function Dashboard() {
-  const { state, todayLog, toggleTask, updateReflection } = useStore();
+  const { state, todayLog, todayKey, toggleTask, updateReflection, addCustomTask, removeTask, editTask } = useStore();
+  const { user, profile } = useAuth();
   const [reflection, setReflection] = useState(todayLog.reflectionNote || '');
   const [expandedBlocks, setExpandedBlocks] = useState<Record<string, boolean>>({ dawn: true, morning: true, afternoon: true, evening: true, night: true });
+  const [showAddTask, setShowAddTask] = useState(false);
+  const [newTaskTitle, setNewTaskTitle] = useState('');
+  const [newTaskCategory, setNewTaskCategory] = useState<'salah' | 'quran' | 'dhikr' | 'dua' | 'custom'>('custom');
+  const [newTaskBlock, setNewTaskBlock] = useState<'dawn' | 'morning' | 'afternoon' | 'evening' | 'night'>('morning');
+  const [newTaskTime, setNewTaskTime] = useState('');
+  const [editingTaskId, setEditingTaskId] = useState<string | null>(null);
+  const [editTitle, setEditTitle] = useState('');
+
   const completedCount = todayLog.tasks.filter(t => t.completed).length;
   const totalCount = todayLog.tasks.length;
-  const progressPercent = Math.round((completedCount / totalCount) * 100);
+  const progressPercent = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
 
-  const topStreak = state.streaks.reduce((a, b) => a.currentStreak > b.currentStreak ? a : b, state.streaks[0]);
+  const topStreak = state.streaks.length > 0
+    ? state.streaks.reduce((a, b) => a.currentStreak > b.currentStreak ? a : b, state.streaks[0])
+    : { habit: 'None', currentStreak: 0, longestStreak: 0, icon: '🔥' };
+
   const isItikaf = state.mode.includes('itikaf');
   const modeLabel = state.mode.map(m => m === 'itikaf' ? "I'tikaf" : m === 'ramadan' ? 'Ramadan' : 'General').join(' + ');
 
-  // Group tasks by time block
+  // Get current dates
+  const now = new Date();
+  const gregorianDate = now.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
+  const hijriParts = HijriUtils.getHijriParts(now, state.hijriOffset);
+  const hijriDate = `${hijriParts.day} ${HijriUtils.getMonthName(hijriParts.month)} ${hijriParts.year} AH`;
+
+  const displayName = profile?.display_name || state.userName || 'User';
+
   const groupedTasks = useMemo(() => {
     const groups: Record<string, typeof todayLog.tasks> = {};
     for (const task of todayLog.tasks) {
@@ -38,31 +59,57 @@ export default function Dashboard() {
     return Object.entries(groups).sort(([a], [b]) => (TIME_BLOCK_ORDER[a] || 0) - (TIME_BLOCK_ORDER[b] || 0));
   }, [todayLog.tasks]);
 
-  // Find next uncompleted task
   const nextTask = todayLog.tasks.find(t => !t.completed);
 
   const toggleBlock = (block: string) => {
     setExpandedBlocks(prev => ({ ...prev, [block]: !prev[block] }));
   };
 
+  const handleAddTask = () => {
+    if (!newTaskTitle.trim()) return;
+    addCustomTask({
+      id: `custom-${Date.now()}`,
+      title: newTaskTitle.trim(),
+      category: newTaskCategory,
+      timeBlock: newTaskBlock,
+      timeSlot: newTaskTime || undefined,
+    });
+    setNewTaskTitle('');
+    setNewTaskTime('');
+    setShowAddTask(false);
+  };
+
+  const handleStartEdit = (taskId: string, title: string) => {
+    setEditingTaskId(taskId);
+    setEditTitle(title);
+  };
+
+  const handleSaveEdit = (taskId: string) => {
+    if (editTitle.trim()) {
+      editTask(taskId, { title: editTitle.trim() });
+    }
+    setEditingTaskId(null);
+  };
+
   return (
     <div className="px-4 pt-6 space-y-4 pb-6">
-      {/* Header */}
+      {/* Header with Dates */}
       <div className="flex items-center justify-between">
         <div>
-          <p className="text-muted-foreground text-xs">Assalamu Alaikum,</p>
-          <h1 className="text-xl font-bold gold-text gold-glow">{state.userName}</h1>
+          <p className="text-muted-foreground text-[10px]">السلام عليكم</p>
+          <h1 className="text-xl font-bold gold-text gold-glow">{displayName}</h1>
         </div>
-        <div className="text-right">
-          <div className="flex items-center gap-1.5 text-primary">
+        <div className="text-right space-y-0.5">
+          <div className="flex items-center gap-1.5 justify-end text-primary">
             <Moon className="w-3.5 h-3.5" />
-            <span className="text-xs font-semibold">Day {state.currentRamadanDay}</span>
+            <span className="text-[10px] font-semibold">{modeLabel}</span>
           </div>
-          <span className="text-[10px] text-muted-foreground">{modeLabel}</span>
+          <p className="text-[10px] text-muted-foreground">{gregorianDate}</p>
+          <p className="text-[10px] font-arabic text-primary/80">{hijriDate}</p>
         </div>
       </div>
 
-      {/* Progress Ring + Next Task */}
+      {/* Progress Card */}
       <motion.div
         initial={{ scale: 0.95, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
@@ -85,18 +132,24 @@ export default function Dashboard() {
           </div>
         </div>
         <div className="flex-1 space-y-1 min-w-0">
-          <p className="text-xs font-medium">{completedCount}/{totalCount} tasks</p>
+          <p className="text-xs font-medium">{completedCount}/{totalCount} tasks completed</p>
           {totalCount - completedCount === 0 ? (
-            <p className="text-[10px] text-accent font-medium">MashaAllah! All done today! ✨</p>
+            <p className="text-[10px] text-accent font-medium">ما شاء الله! All done today! ✨</p>
           ) : nextTask ? (
             <div>
               <p className="text-[10px] text-muted-foreground">Next up:</p>
-              <p className="text-xs font-medium truncate">{nextTask.title} · {nextTask.timeSlot}</p>
+              <p className="text-xs font-medium truncate">{nextTask.title}{nextTask.timeSlot ? ` · ${nextTask.timeSlot}` : ''}</p>
             </div>
           ) : null}
-          <div className="flex items-center gap-1.5 pt-0.5">
-            <Flame className="w-3.5 h-3.5 streak-fire" />
-            <span className="text-[10px] font-medium">{topStreak.icon} {topStreak.currentStreak}d streak</span>
+          <div className="flex items-center gap-2 pt-0.5">
+            <div className="flex items-center gap-1">
+              <Flame className="w-3.5 h-3.5 streak-fire" />
+              <span className="text-[10px] font-medium">{topStreak.currentStreak}d</span>
+            </div>
+            <div className="flex items-center gap-1">
+              <Trophy className="w-3 h-3 text-primary" />
+              <span className="text-[10px] font-medium gold-text">{state.totalXp} XP</span>
+            </div>
           </div>
         </div>
       </motion.div>
@@ -106,7 +159,7 @@ export default function Dashboard() {
         <Link to="/quran" className="glass-card p-2.5 text-center hover:border-primary/30 transition-colors">
           <BookOpen className="w-3.5 h-3.5 mx-auto text-accent mb-0.5" />
           <p className="text-[10px] text-muted-foreground">Qur'an</p>
-          <p className="text-xs font-semibold truncate">{SURAH_NAMES[state.quranProgress.currentSurah]}</p>
+          <p className="text-[10px] font-semibold truncate">{SURAH_NAMES[state.quranProgress.currentSurah]}</p>
         </Link>
         <Link to="/dhikr" className="glass-card p-2.5 text-center hover:border-primary/30 transition-colors">
           <span className="text-sm">📿</span>
@@ -118,14 +171,85 @@ export default function Dashboard() {
           <p className="text-[10px] text-muted-foreground">Streak</p>
           <p className="text-xs font-semibold">{topStreak.currentStreak}d</p>
         </Link>
-        <div className="glass-card p-2.5 text-center">
-          <Trophy className="w-3.5 h-3.5 mx-auto text-primary mb-0.5" />
-          <p className="text-[10px] text-muted-foreground">XP</p>
-          <p className="text-xs font-semibold gold-text">{state.totalXp}</p>
-        </div>
+        <Link to="/calendar" className="glass-card p-2.5 text-center hover:border-primary/30 transition-colors">
+          <Calendar className="w-3.5 h-3.5 mx-auto text-primary mb-0.5" />
+          <p className="text-[10px] text-muted-foreground">Calendar</p>
+          <p className="text-[10px] font-semibold">{hijriParts.day}/{hijriParts.month}</p>
+        </Link>
       </div>
 
-      {/* Grouped Tasks by Time Block */}
+      {/* Add Task Button */}
+      <div className="flex justify-end">
+        <button
+          onClick={() => setShowAddTask(!showAddTask)}
+          className="flex items-center gap-1.5 px-3 py-1.5 bg-primary/10 text-primary rounded-lg text-xs font-medium hover:bg-primary/20 transition-colors"
+        >
+          <Plus className="w-3.5 h-3.5" />
+          Add Task
+        </button>
+      </div>
+
+      {/* Add Task Form */}
+      <AnimatePresence>
+        {showAddTask && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 'auto', opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            className="overflow-hidden"
+          >
+            <div className="glass-card p-3 space-y-2.5">
+              <input
+                value={newTaskTitle}
+                onChange={e => setNewTaskTitle(e.target.value)}
+                placeholder="Task name..."
+                className="w-full bg-secondary/50 rounded-lg px-3 py-2 text-xs outline-none focus:ring-1 focus:ring-primary/30"
+                onKeyDown={e => e.key === 'Enter' && handleAddTask()}
+              />
+              <div className="flex gap-2">
+                <select
+                  value={newTaskCategory}
+                  onChange={e => setNewTaskCategory(e.target.value as any)}
+                  className="flex-1 bg-secondary/50 rounded-lg px-2 py-1.5 text-[10px] outline-none"
+                >
+                  <option value="salah">Salah</option>
+                  <option value="quran">Qur'an</option>
+                  <option value="dhikr">Dhikr</option>
+                  <option value="dua">Du'a</option>
+                  <option value="custom">Custom</option>
+                </select>
+                <select
+                  value={newTaskBlock}
+                  onChange={e => setNewTaskBlock(e.target.value as any)}
+                  className="flex-1 bg-secondary/50 rounded-lg px-2 py-1.5 text-[10px] outline-none"
+                >
+                  <option value="dawn">Dawn</option>
+                  <option value="morning">Morning</option>
+                  <option value="afternoon">Afternoon</option>
+                  <option value="evening">Evening</option>
+                  <option value="night">Night</option>
+                </select>
+                <input
+                  value={newTaskTime}
+                  onChange={e => setNewTaskTime(e.target.value)}
+                  placeholder="Time"
+                  className="w-20 bg-secondary/50 rounded-lg px-2 py-1.5 text-[10px] outline-none"
+                />
+              </div>
+              <div className="flex gap-2">
+                <button onClick={handleAddTask} className="flex-1 py-2 bg-primary text-primary-foreground rounded-lg text-xs font-medium">
+                  Add Task
+                </button>
+                <button onClick={() => setShowAddTask(false)} className="px-4 py-2 bg-secondary text-secondary-foreground rounded-lg text-xs">
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Grouped Tasks */}
       <div className="space-y-2">
         {groupedTasks.map(([block, tasks]) => {
           const info = TIME_BLOCK_LABELS[block];
@@ -162,31 +286,59 @@ export default function Dashboard() {
                   >
                     <div className="px-3 pb-2 space-y-1">
                       {tasks.map(task => (
-                        <button
-                          key={task.id}
-                          onClick={() => toggleTask(task.id)}
-                          className={`w-full flex items-center gap-2.5 px-2 py-2 rounded-lg text-left transition-all hover:bg-secondary/50 ${
-                            task.completed ? 'opacity-50' : ''
-                          }`}
-                        >
-                          {task.completed ? (
-                            <CheckCircle2 className="w-4 h-4 text-accent flex-shrink-0" />
-                          ) : (
-                            <Circle className="w-4 h-4 text-muted-foreground flex-shrink-0" />
-                          )}
+                        <div key={task.id} className={`flex items-center gap-2 px-2 py-2 rounded-lg transition-all ${task.completed ? 'opacity-50' : ''}`}>
+                          <button onClick={() => toggleTask(task.id)} className="flex-shrink-0">
+                            {task.completed ? (
+                              <CheckCircle2 className="w-4 h-4 text-accent" />
+                            ) : (
+                              <Circle className="w-4 h-4 text-muted-foreground" />
+                            )}
+                          </button>
                           <div className="flex-1 min-w-0">
-                            <p className={`text-xs font-medium ${task.completed ? 'line-through text-muted-foreground' : ''}`}>
-                              {task.title}
-                            </p>
-                            {task.timeSlot && (
-                              <p className="text-[10px] text-muted-foreground">{task.timeSlot}</p>
+                            {editingTaskId === task.id ? (
+                              <div className="flex items-center gap-1">
+                                <input
+                                  value={editTitle}
+                                  onChange={e => setEditTitle(e.target.value)}
+                                  className="flex-1 bg-secondary/50 rounded px-2 py-0.5 text-xs outline-none"
+                                  onKeyDown={e => e.key === 'Enter' && handleSaveEdit(task.id)}
+                                  autoFocus
+                                />
+                                <button onClick={() => handleSaveEdit(task.id)} className="p-1 text-accent">
+                                  <Save className="w-3 h-3" />
+                                </button>
+                                <button onClick={() => setEditingTaskId(null)} className="p-1 text-muted-foreground">
+                                  <X className="w-3 h-3" />
+                                </button>
+                              </div>
+                            ) : (
+                              <>
+                                <p className={`text-xs font-medium ${task.completed ? 'line-through text-muted-foreground' : ''}`}>
+                                  {task.title}
+                                </p>
+                                {task.timeSlot && (
+                                  <p className="text-[10px] text-muted-foreground">{task.timeSlot}</p>
+                                )}
+                              </>
                             )}
                           </div>
-                          {task.streakEnabled && <Flame className="w-3 h-3 text-primary/40 flex-shrink-0" />}
-                          <span className={`text-[9px] px-1.5 py-0.5 rounded-full font-medium ${categoryColors[task.category] || ''}`}>
-                            {task.category}
-                          </span>
-                        </button>
+                          {editingTaskId !== task.id && (
+                            <div className="flex items-center gap-0.5 flex-shrink-0">
+                              {task.streakEnabled && <Flame className="w-3 h-3 text-primary/40" />}
+                              <span className={`text-[9px] px-1.5 py-0.5 rounded-full font-medium ${categoryColors[task.category] || ''}`}>
+                                {task.category}
+                              </span>
+                              <button onClick={() => handleStartEdit(task.id, task.title)} className="p-1 text-muted-foreground/50 hover:text-foreground">
+                                <Edit3 className="w-2.5 h-2.5" />
+                              </button>
+                              {task.id.startsWith('custom-') && (
+                                <button onClick={() => removeTask(task.id)} className="p-1 text-muted-foreground/50 hover:text-destructive">
+                                  <X className="w-2.5 h-2.5" />
+                                </button>
+                              )}
+                            </div>
+                          )}
+                        </div>
                       ))}
                     </div>
                   </motion.div>
@@ -215,7 +367,7 @@ export default function Dashboard() {
         </Link>
       </div>
 
-      {/* Reflection - collapsed by default in I'tikaf mode */}
+      {/* Reflection */}
       {!isItikaf || reflection ? (
         <div className="glass-card p-3 space-y-2">
           <h2 className="text-xs font-semibold flex items-center gap-1.5">

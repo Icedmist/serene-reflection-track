@@ -1,14 +1,24 @@
 import { useStore } from '@/lib/store';
 import { motion } from 'framer-motion';
-import { Plus, Minus, RotateCcw, Heart, Trash2 } from 'lucide-react';
-import { useState } from 'react';
+import { Plus, Minus, RotateCcw, Heart, Trash2, Sparkles, Send, Loader2 } from 'lucide-react';
+import { useState, useRef } from 'react';
 import { Link } from 'react-router-dom';
+import ReactMarkdown from 'react-markdown';
+import { toast } from 'sonner';
+
+const SUGGEST_DUA_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/suggest-dua`;
 
 export default function DhikrPage() {
   const { todayLog, updateDhikr, state, addDua, toggleDuaAnswered, removeDua } = useStore();
   const [animatingId, setAnimatingId] = useState<string | null>(null);
   const [tab, setTab] = useState<'adhkar' | 'dhikr' | 'dua'>('adhkar');
   const [newDua, setNewDua] = useState('');
+
+  // AI Dua state
+  const [aiIntent, setAiIntent] = useState('');
+  const [aiResponse, setAiResponse] = useState('');
+  const [aiLoading, setAiLoading] = useState(false);
+  const [showAi, setShowAi] = useState(false);
 
   const handleIncrement = (id: string) => {
     updateDhikr(id, 1);
@@ -24,8 +34,81 @@ export default function DhikrPage() {
   const eveningDone = (todayLog.eveningAdhkar || []).filter(a => a.completed).length;
   const eveningTotal = (todayLog.eveningAdhkar || []).length;
 
+  const handleAiSuggest = async () => {
+    if (!aiIntent.trim()) return;
+    setAiLoading(true);
+    setAiResponse('');
+
+    try {
+      const resp = await fetch(SUGGEST_DUA_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+        },
+        body: JSON.stringify({ intent: aiIntent }),
+      });
+
+      if (!resp.ok || !resp.body) {
+        const errData = await resp.json().catch(() => ({}));
+        toast.error(errData.error || 'Failed to get suggestion');
+        setAiLoading(false);
+        return;
+      }
+
+      const reader = resp.body.getReader();
+      const decoder = new TextDecoder();
+      let textBuffer = '';
+      let fullText = '';
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        textBuffer += decoder.decode(value, { stream: true });
+
+        let newlineIndex: number;
+        while ((newlineIndex = textBuffer.indexOf('\n')) !== -1) {
+          let line = textBuffer.slice(0, newlineIndex);
+          textBuffer = textBuffer.slice(newlineIndex + 1);
+
+          if (line.endsWith('\r')) line = line.slice(0, -1);
+          if (line.startsWith(':') || line.trim() === '') continue;
+          if (!line.startsWith('data: ')) continue;
+
+          const jsonStr = line.slice(6).trim();
+          if (jsonStr === '[DONE]') break;
+
+          try {
+            const parsed = JSON.parse(jsonStr);
+            const content = parsed.choices?.[0]?.delta?.content;
+            if (content) {
+              fullText += content;
+              setAiResponse(fullText);
+            }
+          } catch {
+            textBuffer = line + '\n' + textBuffer;
+            break;
+          }
+        }
+      }
+    } catch (e) {
+      toast.error('Failed to connect to AI service');
+    }
+    setAiLoading(false);
+  };
+
+  const handleSaveAiDua = () => {
+    if (aiResponse) {
+      // Extract first meaningful line as the dua text
+      const lines = aiResponse.split('\n').filter(l => l.trim());
+      const duaText = aiIntent + ' — ' + (lines[0] || '').substring(0, 200);
+      addDua(duaText);
+      toast.success("Du'a saved to your list");
+    }
+  };
+
   return (
-    <div className="px-4 pt-6 space-y-4">
+    <div className="px-4 pt-6 space-y-4 pb-6">
       <h1 className="text-lg font-bold gold-text">Adhkar & Du'a</h1>
 
       {/* Tabs */}
@@ -122,6 +205,62 @@ export default function DhikrPage() {
 
       {tab === 'dua' && (
         <div className="space-y-3">
+          {/* AI Du'a Suggestion */}
+          <div className="glass-card p-3 space-y-2.5 border-primary/20">
+            <button
+              onClick={() => setShowAi(!showAi)}
+              className="w-full flex items-center gap-2 text-left"
+            >
+              <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
+                <Sparkles className="w-4 h-4 text-primary" />
+              </div>
+              <div className="flex-1">
+                <p className="text-xs font-semibold">AI Du'a Assistant</p>
+                <p className="text-[10px] text-muted-foreground">Get personalized du'a suggestions</p>
+              </div>
+            </button>
+
+            {showAi && (
+              <motion.div
+                initial={{ height: 0, opacity: 0 }}
+                animate={{ height: 'auto', opacity: 1 }}
+                className="space-y-2.5 pt-1"
+              >
+                <div className="flex gap-2">
+                  <input
+                    value={aiIntent}
+                    onChange={e => setAiIntent(e.target.value)}
+                    placeholder="What do you want to make du'a for? e.g. guidance, healing, family..."
+                    className="flex-1 bg-secondary/50 rounded-lg px-3 py-2.5 text-xs outline-none placeholder:text-muted-foreground/50 focus:ring-1 focus:ring-primary/30"
+                    onKeyDown={e => e.key === 'Enter' && handleAiSuggest()}
+                  />
+                  <button
+                    onClick={handleAiSuggest}
+                    disabled={aiLoading || !aiIntent.trim()}
+                    className="px-3 bg-primary text-primary-foreground rounded-lg flex items-center justify-center disabled:opacity-50"
+                  >
+                    {aiLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+                  </button>
+                </div>
+
+                {aiResponse && (
+                  <div className="bg-secondary/30 rounded-lg p-3 space-y-2">
+                    <div className="prose prose-sm max-w-none text-xs text-foreground [&_p]:my-1 [&_h1]:text-sm [&_h2]:text-xs [&_h3]:text-xs [&_strong]:text-primary">
+                      <ReactMarkdown>{aiResponse}</ReactMarkdown>
+                    </div>
+                    <button
+                      onClick={handleSaveAiDua}
+                      className="w-full py-2 bg-accent/10 text-accent rounded-lg text-xs font-medium hover:bg-accent/20 transition-colors"
+                    >
+                      💾 Save to My Du'a List
+                    </button>
+                  </div>
+                )}
+              </motion.div>
+            )}
+          </div>
+
+          {/* Manual Du'a Input */}
           <div className="glass-card p-3 flex gap-2">
             <input
               value={newDua}

@@ -1,6 +1,8 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
-import { AppState, DayLog, DhikrCounter, DuaEntry, QuranSession, AdhkarMicrotask, MORNING_ADHKAR_TEMPLATE, EVENING_ADHKAR_TEMPLATE } from './types';
+import { AppState, DayLog, DhikrCounter, DuaEntry, QuranSession, AdhkarMicrotask, MORNING_ADHKAR_TEMPLATE, EVENING_ADHKAR_TEMPLATE, DailyTask } from './types';
 import { generateInitialState, ITIKAF_TEMPLATE, DEFAULT_DHIKR } from './demo-data';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from './auth-context';
 
 const STORAGE_KEY = 'ibadahtrack-v2';
 
@@ -8,6 +10,7 @@ interface StoreContextType {
   state: AppState;
   setState: React.Dispatch<React.SetStateAction<AppState>>;
   todayLog: DayLog;
+  todayKey: string;
   toggleTask: (taskId: string) => void;
   updateDhikr: (dhikrId: string, delta: number) => void;
   updateReflection: (note: string) => void;
@@ -26,27 +29,28 @@ interface StoreContextType {
   removeDua: (id: string) => void;
   addXp: (amount: number) => void;
   updateHijriOffset: (offset: number) => void;
+  addCustomTask: (task: Omit<DailyTask, 'completed' | 'notes'>) => void;
+  removeTask: (taskId: string) => void;
+  editTask: (taskId: string, updates: Partial<DailyTask>) => void;
+  syncToCloud: () => Promise<void>;
 }
 
 const StoreContext = createContext<StoreContextType | null>(null);
 
-function getTodayKey(state: AppState): string {
-  const entries = Object.entries(state.days);
-  if (entries.length === 0) return new Date().toISOString().split('T')[0];
-  const sorted = entries.sort((a, b) => b[0].localeCompare(a[0]));
-  return sorted[0][0];
+/** Always return today's actual date key */
+function getTodayKey(): string {
+  return new Date().toISOString().split('T')[0];
 }
 
 export function StoreProvider({ children }: { children: React.ReactNode }) {
+  const { user, profile } = useAuth();
+
   const [state, setState] = useState<AppState>(() => {
     try {
       const stored = localStorage.getItem(STORAGE_KEY);
       if (stored) {
         const parsed = JSON.parse(stored);
-        // Migrate old mode string to array
-        if (typeof parsed.mode === 'string') {
-          parsed.mode = [parsed.mode];
-        }
+        if (typeof parsed.mode === 'string') parsed.mode = [parsed.mode];
         if (!parsed.focusAreas) parsed.focusAreas = ['balanced'];
         if (!parsed.enabledActivities) parsed.enabledActivities = ['morning_adhkar', 'evening_adhkar', 'tahajjud', 'taraweeh', 'reflections'];
         if (!parsed.privacyMode) parsed.privacyMode = 'private';
@@ -62,11 +66,22 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     return generateInitialState();
   });
 
+  // Update userName from profile
+  useEffect(() => {
+    if (profile?.display_name && profile.display_name !== state.userName) {
+      setState(prev => ({ ...prev, userName: profile.display_name }));
+    }
+  }, [profile]);
+
+  // Persist to localStorage
   useEffect(() => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
   }, [state]);
 
-  const todayKey = getTodayKey(state);
+  // Use actual today's date
+  const todayKey = getTodayKey();
+
+  // Ensure today's log exists
   const todayLog = state.days[todayKey] || {
     date: todayKey,
     ramadanDay: state.currentRamadanDay,
@@ -76,6 +91,58 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     morningAdhkar: MORNING_ADHKAR_TEMPLATE.map(a => ({ ...a, completed: false })),
     eveningAdhkar: EVENING_ADHKAR_TEMPLATE.map(a => ({ ...a, completed: false })),
   };
+
+  // Auto-create today's entry if missing
+  useEffect(() => {
+    if (!state.days[todayKey]) {
+      setState(prev => ({
+        ...prev,
+        days: {
+          ...prev.days,
+          [todayKey]: {
+            date: todayKey,
+            ramadanDay: prev.currentRamadanDay,
+            tasks: ITIKAF_TEMPLATE.map(t => ({ ...t, completed: false, notes: '' })),
+            dhikr: DEFAULT_DHIKR.map(d => ({ ...d, count: 0 })),
+            completionPercent: 0,
+            morningAdhkar: MORNING_ADHKAR_TEMPLATE.map(a => ({ ...a, completed: false, count: 0 })),
+            eveningAdhkar: EVENING_ADHKAR_TEMPLATE.map(a => ({ ...a, completed: false, count: 0 })),
+          },
+        },
+      }));
+    }
+  }, [todayKey]);
+
+  // Sync XP to cloud profile
+  const syncToCloud = useCallback(async () => {
+    if (!user) return;
+    try {
+      await supabase.from('profiles').update({
+        total_xp: state.totalXp,
+        display_name: state.userName,
+        current_ramadan_day: state.currentRamadanDay,
+        mode: state.mode.join(','),
+        quran_tracking_style: state.quranProgress.trackingStyle,
+        sharing_enabled: state.sharingEnabled,
+      }).eq('user_id', user.id);
+    } catch (e) {
+      console.error('Sync failed:', e);
+    }
+  }, [user, state.totalXp, state.userName, state.currentRamadanDay, state.mode, state.quranProgress.trackingStyle, state.sharingEnabled]);
+
+  // Auto-sync every 30 seconds
+  useEffect(() => {
+    if (!user) return;
+    const interval = setInterval(syncToCloud, 30000);
+    return () => clearInterval(interval);
+  }, [user, syncToCloud]);
+
+  // Also sync on state changes (debounced)
+  useEffect(() => {
+    if (!user) return;
+    const timeout = setTimeout(syncToCloud, 5000);
+    return () => clearTimeout(timeout);
+  }, [state.totalXp, state.sharingEnabled, state.userName]);
 
   const toggleTask = useCallback((taskId: string) => {
     setState(prev => {
@@ -143,14 +210,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       ...prev,
       quranProgress: {
         ...prev.quranProgress,
-        lastSession: {
-          id: Date.now().toString(),
-          surah, ayah,
-          startedAt: new Date().toISOString(),
-          status: 'active',
-          ayahsRead: 0,
-          duration: 0,
-        },
+        lastSession: { id: Date.now().toString(), surah, ayah, startedAt: new Date().toISOString(), status: 'active', ayahsRead: 0, duration: 0 },
       },
     }));
   }, []);
@@ -158,44 +218,21 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   const pauseQuranSession = useCallback(() => {
     setState(prev => {
       if (!prev.quranProgress.lastSession) return prev;
-      return {
-        ...prev,
-        quranProgress: {
-          ...prev.quranProgress,
-          lastSession: { ...prev.quranProgress.lastSession, status: 'paused' },
-        },
-      };
+      return { ...prev, quranProgress: { ...prev.quranProgress, lastSession: { ...prev.quranProgress.lastSession, status: 'paused' } } };
     });
   }, []);
 
   const resumeQuranSession = useCallback(() => {
     setState(prev => {
       if (!prev.quranProgress.lastSession) return prev;
-      return {
-        ...prev,
-        quranProgress: {
-          ...prev.quranProgress,
-          lastSession: { ...prev.quranProgress.lastSession, status: 'active' },
-        },
-      };
+      return { ...prev, quranProgress: { ...prev.quranProgress, lastSession: { ...prev.quranProgress.lastSession, status: 'active' } } };
     });
   }, []);
 
   const completeQuranSession = useCallback((ayahsRead: number) => {
     setState(prev => {
       if (!prev.quranProgress.lastSession) return prev;
-      return {
-        ...prev,
-        quranProgress: {
-          ...prev.quranProgress,
-          lastSession: {
-            ...prev.quranProgress.lastSession,
-            status: 'completed',
-            ayahsRead,
-            endedAt: new Date().toISOString(),
-          },
-        },
-      };
+      return { ...prev, quranProgress: { ...prev.quranProgress, lastSession: { ...prev.quranProgress.lastSession, status: 'completed', ayahsRead, endedAt: new Date().toISOString() } } };
     });
   }, []);
 
@@ -232,12 +269,39 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     setState(prev => ({ ...prev, hijriOffset: offset }));
   }, []);
 
+  const addCustomTask = useCallback((task: Omit<DailyTask, 'completed' | 'notes'>) => {
+    setState(prev => {
+      const day = { ...prev.days[todayKey] || todayLog };
+      const newTask: DailyTask = { ...task, completed: false, notes: '' };
+      const tasks = [...day.tasks, newTask];
+      return { ...prev, days: { ...prev.days, [todayKey]: { ...day, tasks } } };
+    });
+  }, [todayKey]);
+
+  const removeTask = useCallback((taskId: string) => {
+    setState(prev => {
+      const day = { ...prev.days[todayKey] || todayLog };
+      const tasks = day.tasks.filter(t => t.id !== taskId);
+      const completedCount = tasks.filter(t => t.completed).length;
+      return { ...prev, days: { ...prev.days, [todayKey]: { ...day, tasks, completionPercent: tasks.length ? Math.round((completedCount / tasks.length) * 100) : 0 } } };
+    });
+  }, [todayKey]);
+
+  const editTask = useCallback((taskId: string, updates: Partial<DailyTask>) => {
+    setState(prev => {
+      const day = { ...prev.days[todayKey] || todayLog };
+      const tasks = day.tasks.map(t => t.id === taskId ? { ...t, ...updates } : t);
+      return { ...prev, days: { ...prev.days, [todayKey]: { ...day, tasks } } };
+    });
+  }, [todayKey]);
+
   return (
     <StoreContext.Provider value={{
-      state, setState, todayLog, toggleTask, updateDhikr, updateReflection, updateQuranSurah,
+      state, setState, todayLog, todayKey, toggleTask, updateDhikr, updateReflection, updateQuranSurah,
       getDayLog, resetDemo, updateAdhkar, markAdhkarSetComplete,
       startQuranSession, pauseQuranSession, resumeQuranSession, completeQuranSession, saveQuranStopPoint,
       addDua, toggleDuaAnswered, removeDua, addXp, updateHijriOffset,
+      addCustomTask, removeTask, editTask, syncToCloud,
     }}>
       {children}
     </StoreContext.Provider>
