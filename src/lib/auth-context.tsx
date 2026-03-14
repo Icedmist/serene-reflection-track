@@ -18,7 +18,13 @@ const AuthContext = createContext<AuthContextType | null>(null);
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<LocalUser | null>(null);
   const [loading, setLoading] = useState(true);
-  const [isGuest, setIsGuest] = useState(() => localStorage.getItem('ibadah-guest') === 'true');
+  const [isGuest, setIsGuest] = useState(() => {
+    const guest = localStorage.getItem('ibadah-guest') === 'true';
+    if (guest && !localStorage.getItem('ibadah-guest-id')) {
+      localStorage.setItem('ibadah-guest-id', `guest-${Math.random().toString(36).substring(2, 11)}`);
+    }
+    return guest;
+  });
 
   useEffect(() => {
     // Check for existing session on mount
@@ -58,6 +64,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setIsGuest(true);
     setUser(null);
     localStorage.setItem('ibadah-guest', 'true');
+    if (!localStorage.getItem('ibadah-guest-id')) {
+      localStorage.setItem('ibadah-guest-id', `guest-${Math.random().toString(36).substring(2, 11)}`);
+    }
   };
 
   const isAdmin = user?.role === 'admin';

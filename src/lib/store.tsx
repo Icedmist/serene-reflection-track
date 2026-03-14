@@ -1,6 +1,8 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { AppState, DayLog, DhikrCounter, DuaEntry, QuranSession, AdhkarMicrotask, MORNING_ADHKAR_TEMPLATE, EVENING_ADHKAR_TEMPLATE } from './types';
 import { generateInitialState, ITIKAF_TEMPLATE, DEFAULT_DHIKR } from './demo-data';
+import { supabase } from '@/integrations/supabase/client';
+import { HijriUtils } from './hijri-utils';
 
 const STORAGE_KEY = 'ibadahtrack-v2';
 
@@ -64,12 +66,35 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-  }, [state]);
+
+    // Auto-sync to Supabase profile
+    const syncProfile = async () => {
+      const userIdStr = localStorage.getItem('ibadah-session-user-id') ||
+        (localStorage.getItem('ibadah-guest') === 'true' ? 'guest-user' : null);
+
+      if (!userIdStr) return;
+
+      try {
+        await supabase.from('profiles').upsert({
+          user_id: userIdStr,
+          display_name: state.userName || 'Anonymous',
+          total_xp: state.totalXp,
+          sharing_enabled: state.privacyMode !== 'private',
+          updated_at: new Date().toISOString()
+        }, { onConflict: 'user_id' });
+      } catch (err) {
+        console.error('Failed to sync profile to backend:', err);
+      }
+    };
+
+    const timeout = setTimeout(syncProfile, 2000); // Debounce sync
+    return () => clearTimeout(timeout);
+  }, [state.totalXp, state.userName, state.privacyMode]);
 
   const todayKey = getTodayKey(state);
+
   const todayLog = state.days[todayKey] || {
     date: todayKey,
-    ramadanDay: state.currentRamadanDay,
     tasks: ITIKAF_TEMPLATE.map(t => ({ ...t, completed: false, notes: '' })),
     dhikr: DEFAULT_DHIKR,
     completionPercent: 0,

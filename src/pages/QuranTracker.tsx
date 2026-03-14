@@ -3,6 +3,7 @@ import { SURAH_NAMES } from '@/lib/types';
 import { BookOpen, ChevronUp, ChevronDown, Target, BookMarked } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
+import { HijriUtils } from '@/lib/hijri-utils';
 
 export default function QuranTracker() {
   const { state, updateQuranSurah } = useStore();
@@ -10,7 +11,9 @@ export default function QuranTracker() {
   const progress = ((quranProgress.currentSurah - quranProgress.startSurah) / (114 - quranProgress.startSurah + 1)) * 100;
   const surahsRead = quranProgress.currentSurah - quranProgress.startSurah;
   const surahsRemaining = 114 - quranProgress.currentSurah;
-  const daysLeft = 30 - state.currentRamadanDay;
+
+  const ramadanDay = HijriUtils.getRamadanDay(new Date(), state.hijriOffset);
+  const daysLeft = ramadanDay > 0 ? (30 - ramadanDay) : 0;
   const dailyTarget = daysLeft > 0 ? Math.ceil(surahsRemaining / daysLeft) : surahsRemaining;
 
   const hasResumePoint = quranProgress.currentAyah > 1;

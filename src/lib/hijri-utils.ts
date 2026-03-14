@@ -27,7 +27,15 @@ export const HijriUtils = {
 
         const parts = formatter.formatToParts(adjustedDate);
         const day = parseInt(parts.find(p => p.type === 'day')?.value || '1');
-        const month = parseInt(parts.find(p => p.type === 'month')?.value || '1');
+        const monthPart = parts.find(p => p.type === 'month')?.value || '1';
+        let month = parseInt(monthPart);
+
+        if (isNaN(month)) {
+            // Fallback for when current locale returns month names
+            const monthIndex = HIJRI_MONTH_NAMES.findIndex(m => m.toLowerCase().includes(monthPart.toLowerCase()));
+            month = monthIndex !== -1 ? monthIndex + 1 : 1;
+        }
+
         const year = parseInt(parts.find(p => p.type === 'year')?.value || '1');
 
         return { day, month, year };
@@ -52,9 +60,44 @@ export const HijriUtils = {
         const endH = this.getHijriParts(end, offset);
 
         if (startH.month === endH.month) {
-            return `${this.getMonthName(startH.month)} ${startH.year} AH`;
+            return `${this.getMonthName(startH.month)} ${startH.year}`;
         } else {
-            return `${this.getMonthName(startH.month)} – ${this.getMonthName(endH.month)} ${endH.year} AH`;
+            return `${this.getMonthName(startH.month)} – ${this.getMonthName(endH.month)} ${endH.year}`;
         }
+    },
+
+    /**
+     * Checks if a date falls within Ramadan.
+     */
+    isRamadan(date: Date, offset: number = 0) {
+        const h = this.getHijriParts(date, offset);
+        return h.month === 9;
+    },
+
+    /**
+     * Finds the approximate Gregorian date for a Hijri day.
+     */
+    getGregorianFromHijri(hYear: number, hMonth: number, hDay: number, offset: number = 0) {
+        // Start near the expected Gregorian date (AH 1447 ~ 2026/2027)
+        let guess = new Date(hYear + 579, hMonth - 1, hDay);
+
+        // Refine by checking parts
+        for (let i = -100; i < 100; i++) {
+            const test = new Date(guess);
+            test.setDate(test.getDate() + i);
+            const h = this.getHijriParts(test, offset);
+            if (h.year === hYear && h.month === hMonth && h.day === hDay) {
+                return test;
+            }
+        }
+        return guess;
+    },
+
+    /**
+     * Gets the Ramadan day for a date (1-30), or 0 if not Ramadan.
+     */
+    getRamadanDay(date: Date, offset: number = 0) {
+        const h = this.getHijriParts(date, offset);
+        return h.month === 9 ? h.day : 0;
     }
 };

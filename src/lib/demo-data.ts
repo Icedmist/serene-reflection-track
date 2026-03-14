@@ -41,7 +41,6 @@ export function generateInitialState(): AppState {
 
   days[todayStr] = {
     date: todayStr,
-    ramadanDay: 1,
     tasks: ITIKAF_TEMPLATE.map(t => ({ ...t, completed: false, notes: '' })),
     dhikr: DEFAULT_DHIKR,
     completionPercent: 0,
@@ -51,7 +50,6 @@ export function generateInitialState(): AppState {
 
   return {
     userName: 'User',
-    currentRamadanDay: 1,
     mode: ['ramadan'],
     focusAreas: ['balanced'],
     enabledActivities: ['morning_adhkar', 'evening_adhkar', 'tahajjud', 'taraweeh', 'reflections'],

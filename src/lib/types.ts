@@ -51,7 +51,6 @@ export interface QuranSession {
 
 export interface DayLog {
   date: string;
-  ramadanDay: number;
   tasks: DailyTask[];
   quranSurahStart?: number;
   quranSurahEnd?: number;
@@ -88,7 +87,6 @@ export type PrivacyMode = 'private' | 'share_streaks' | 'share_summaries';
 
 export interface AppState {
   userName: string;
-  currentRamadanDay: number;
   mode: ('ramadan' | 'itikaf' | 'general')[];
   focusAreas: FocusArea[];
   enabledActivities: EnabledActivity[];

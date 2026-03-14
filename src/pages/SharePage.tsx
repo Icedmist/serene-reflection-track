@@ -7,6 +7,7 @@ import { toPng } from 'html-to-image';
 import { Share2, Download, Moon, Copy, Check, Link2, ExternalLink } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { toast } from 'sonner';
+import { HijriUtils } from '@/lib/hijri-utils';
 
 export default function SharePage() {
   const { state, todayLog } = useStore();
@@ -18,6 +19,11 @@ export default function SharePage() {
   const [shareLink, setShareLink] = useState('');
   const [generatingLink, setGeneratingLink] = useState(false);
 
+  const ramadanDay = HijriUtils.getRamadanDay(new Date(), state.hijriOffset);
+  const hijriDate = HijriUtils.getHijriParts(new Date(), state.hijriOffset);
+  const hijriMonthName = HijriUtils.getMonthName(hijriDate.month);
+  const dateLabel = ramadanDay > 0 ? `Ramadan Day ${ramadanDay}` : `${hijriDate.day} ${hijriMonthName}`;
+
   const completedTasks = todayLog.tasks.filter(t => t.completed);
   const topStreaks = state.streaks.sort((a, b) => b.currentStreak - a.currentStreak).slice(0, 3);
 
@@ -27,7 +33,7 @@ export default function SharePage() {
     try {
       const dataUrl = await toPng(cardRef.current, { pixelRatio: 3, backgroundColor: '#111827' });
       const link = document.createElement('a');
-      link.download = `ibadahtrack-day${state.currentRamadanDay}.png`;
+      link.download = `ibadahtrack-${ramadanDay > 0 ? 'ramadan-' + ramadanDay : 'hijri-' + hijriDate.day}.png`;
       link.href = dataUrl;
       link.click();
     } catch (e) {
@@ -37,7 +43,7 @@ export default function SharePage() {
   };
 
   const handleCopyText = () => {
-    const shareText = `Ramadan Day ${state.currentRamadanDay} — ${todayLog.completionPercent}% complete. ${completedTasks.length} tasks done. Qur'an: Surah ${SURAH_NAMES[state.quranProgress.currentSurah]}. #IbadahTrack`;
+    const shareText = `${dateLabel} — ${todayLog.completionPercent}% complete. ${completedTasks.length} tasks done. Qur'an: Surah ${SURAH_NAMES[state.quranProgress.currentSurah]}. #IbadahTrack`;
     navigator.clipboard.writeText(shareText);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
@@ -102,7 +108,7 @@ export default function SharePage() {
 
           <div className="text-center py-2">
             <p style={{ fontSize: 28, fontWeight: 700, color: '#d4a843' }}>
-              Ramadan Day {state.currentRamadanDay}
+              {dateLabel}
             </p>
           </div>
 

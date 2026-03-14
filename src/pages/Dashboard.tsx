@@ -1,9 +1,10 @@
 import { useStore } from '@/lib/store';
 import { SURAH_NAMES, TIME_BLOCK_LABELS, TIME_BLOCK_ORDER } from '@/lib/types';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Moon, Flame, BookOpen, CheckCircle2, Circle, PenLine, ChevronRight, ChevronDown, Trophy } from 'lucide-react';
+import { Moon, Flame, BookOpen, CheckCircle2, Circle, PenLine, ChevronRight, ChevronDown, Trophy, Calendar } from 'lucide-react';
 import { useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
+import { HijriUtils } from '@/lib/hijri-utils';
 
 const categoryColors: Record<string, string> = {
   salah: 'bg-primary/20 text-primary',
@@ -19,6 +20,11 @@ export default function Dashboard() {
   const { state, todayLog, toggleTask, updateReflection } = useStore();
   const [reflection, setReflection] = useState(todayLog.reflectionNote || '');
   const [expandedBlocks, setExpandedBlocks] = useState<Record<string, boolean>>({ dawn: true, morning: true, afternoon: true, evening: true, night: true });
+
+  const hijriDate = HijriUtils.getHijriParts(new Date(), state.hijriOffset);
+  const hijriMonthName = HijriUtils.getMonthName(hijriDate.month);
+  const ramadanDay = HijriUtils.getRamadanDay(new Date(), state.hijriOffset);
+
   const completedCount = todayLog.tasks.filter(t => t.completed).length;
   const totalCount = todayLog.tasks.length;
   const progressPercent = Math.round((completedCount / totalCount) * 100);
@@ -54,11 +60,16 @@ export default function Dashboard() {
           <h1 className="text-xl font-bold gold-text gold-glow">{state.userName}</h1>
         </div>
         <div className="text-right">
-          <div className="flex items-center gap-1.5 text-primary">
+          <div className="flex items-center gap-1.5 text-primary justify-end">
             <Moon className="w-3.5 h-3.5" />
-            <span className="text-xs font-semibold">Day {state.currentRamadanDay}</span>
+            <span className="text-xs font-semibold">
+              {ramadanDay > 0 ? `Ramadan ${ramadanDay}` : `${hijriDate.day} ${hijriMonthName}`}
+            </span>
           </div>
-          <span className="text-[10px] text-muted-foreground">{modeLabel}</span>
+          <div className="flex items-center gap-1 justify-end text-[10px] text-muted-foreground">
+            <Calendar className="w-2.5 h-2.5" />
+            <span>{hijriMonthName} {hijriDate.year} AH</span>
+          </div>
         </div>
       </div>
 
@@ -165,9 +176,8 @@ export default function Dashboard() {
                         <button
                           key={task.id}
                           onClick={() => toggleTask(task.id)}
-                          className={`w-full flex items-center gap-2.5 px-2 py-2 rounded-lg text-left transition-all hover:bg-secondary/50 ${
-                            task.completed ? 'opacity-50' : ''
-                          }`}
+                          className={`w-full flex items-center gap-2.5 px-2 py-2 rounded-lg text-left transition-all hover:bg-secondary/50 ${task.completed ? 'opacity-50' : ''
+                            }`}
                         >
                           {task.completed ? (
                             <CheckCircle2 className="w-4 h-4 text-accent flex-shrink-0" />

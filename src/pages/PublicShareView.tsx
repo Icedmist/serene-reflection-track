@@ -1,14 +1,17 @@
 import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { db } from '@/lib/db';
-import { Moon, BookOpen, Flame, CheckCircle2, UserPlus } from 'lucide-react';
+import { Moon, BookOpen, Flame, CheckCircle2, UserPlus, Calendar } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useAuth } from '@/lib/auth-context';
+import { HijriUtils } from '@/lib/hijri-utils';
 
 interface ShareData {
   displayName: string;
   mode: string;
-  currentRamadanDay: number;
+  ramadanDay: number;
+  hijriDate: { day: number; month: number; year: number };
+  hijriMonthName: string;
   totalXp: number;
   shareType: string;
 }
@@ -27,17 +30,17 @@ export default function PublicShareView() {
   const loadShareData = async () => {
     if (!code) { setError('Invalid link'); setLoading(false); return; }
 
-    // Since we are now "built-in" and local-only, we'll just show the *current* user's profile
-    // OR if we wanted to support multiple local accounts, we can find a user.
-    // For this context, we'll try to find a user with this 'name' or just show the logged in user as a placeholder.
     const allUsers = await db.users.toArray();
-    const profile = allUsers[0]; // Just take the first one or the logged in one
+    const profile = allUsers[0];
 
     if (profile) {
+      const hDate = HijriUtils.getHijriParts(new Date(), profile.hijri_offset || 0);
       setData({
         displayName: profile.name || 'A Muslim',
         mode: profile.mode || 'ramadan',
-        currentRamadanDay: profile.current_ramadan_day || 1,
+        ramadanDay: HijriUtils.getRamadanDay(new Date(), profile.hijri_offset || 0),
+        hijriDate: hDate,
+        hijriMonthName: HijriUtils.getMonthName(hDate.month),
         totalXp: profile.total_xp || 0,
         shareType: 'summary',
       });
@@ -89,8 +92,13 @@ export default function PublicShareView() {
           <div className="grid grid-cols-2 gap-3">
             <div className="bg-secondary/50 rounded-lg p-3 text-center">
               <Moon className="w-5 h-5 mx-auto text-primary mb-1" />
-              <p className="text-lg font-bold">Day {data.currentRamadanDay}</p>
-              <p className="text-[10px] text-muted-foreground capitalize">{data.mode}</p>
+              <p className="text-sm font-bold truncate">
+                {data.ramadanDay > 0 ? `Ramadan ${data.ramadanDay}` : `${data.hijriDate.day} ${data.hijriMonthName}`}
+              </p>
+              <div className="flex items-center gap-1 justify-center text-[8px] text-muted-foreground">
+                <Calendar className="w-2 h-2" />
+                <span>{data.hijriMonthName} {data.hijriDate.year}</span>
+              </div>
             </div>
             <div className="bg-secondary/50 rounded-lg p-3 text-center">
               <Flame className="w-5 h-5 mx-auto streak-fire mb-1" />
