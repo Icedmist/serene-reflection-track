@@ -189,6 +189,9 @@ export default function Dashboard() {
         </Link>
       </div>
 
+      {/* Daily Motivation */}
+      <DailyMotivation />
+
       {/* Add Task Button */}
       <div className="flex justify-end">
         <button
