@@ -159,6 +159,8 @@ export default function DhikrPage() {
         </div>
       )}
 
+      {tab === 'collection' && <AdhkarBrowser />}
+
       {tab === 'dhikr' && (
         <div className="space-y-3">
           <div className="flex items-center justify-between">

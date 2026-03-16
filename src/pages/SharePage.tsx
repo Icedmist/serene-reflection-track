@@ -266,6 +266,9 @@ export default function SharePage() {
           </div>
         )}
       </div>
+
+      {/* Invite Friends Section */}
+      {user && <InviteSection />}
     </div>
   );
 }
