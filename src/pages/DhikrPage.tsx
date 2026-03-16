@@ -5,13 +5,14 @@ import { useState, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import ReactMarkdown from 'react-markdown';
 import { toast } from 'sonner';
+import AdhkarBrowser from '@/components/AdhkarBrowser';
 
 const SUGGEST_DUA_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/suggest-dua`;
 
 export default function DhikrPage() {
   const { todayLog, updateDhikr, state, addDua, toggleDuaAnswered, removeDua } = useStore();
   const [animatingId, setAnimatingId] = useState<string | null>(null);
-  const [tab, setTab] = useState<'adhkar' | 'dhikr' | 'dua'>('adhkar');
+  const [tab, setTab] = useState<'adhkar' | 'collection' | 'dhikr' | 'dua'>('adhkar');
   const [newDua, setNewDua] = useState('');
 
   // AI Dua state
