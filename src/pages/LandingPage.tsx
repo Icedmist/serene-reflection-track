@@ -6,9 +6,84 @@ import { useNavigate } from 'react-router-dom';
 import {
   Moon, BookOpen, Flame, Calendar, Share2, Bell,
   ChevronDown, Sparkles, Heart, Star, ArrowRight,
-  Users, Shield, Smartphone
+  Users, Shield, Smartphone, Mail, Check
 } from 'lucide-react';
 import * as THREE from 'three';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
+
+/* ─── Email Capture Component ─── */
+function EmailCaptureSection() {
+  const [email, setEmail] = useState('');
+  const [submitted, setSubmitted] = useState(false);
+  const [loading, setLoading] = useState(false);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email.trim()) return;
+    setLoading(true);
+    try {
+      await supabase.from('subscribers').insert({ email: email.trim(), source: 'landing_page' });
+      setSubmitted(true);
+      toast.success('JazakAllah Khair! You\'ll hear from us soon.');
+    } catch {
+      toast.error('Could not subscribe. Please try again.');
+    }
+    setLoading(false);
+  };
+
+  return (
+    <section className="relative py-16 px-6">
+      <div className="max-w-lg mx-auto">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          className="bg-card/40 backdrop-blur-md border border-primary/20 rounded-2xl p-6 space-y-4 text-center"
+        >
+          <div className="w-12 h-12 mx-auto rounded-xl bg-primary/10 flex items-center justify-center">
+            <Mail className="w-6 h-6 text-primary" />
+          </div>
+          <h3 className="text-lg font-bold">Stay Connected</h3>
+          <p className="text-xs text-muted-foreground">
+            Get Ramadan reminders, daily adhkar tips, and new feature updates delivered to your inbox.
+          </p>
+
+          {submitted ? (
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              className="flex items-center justify-center gap-2 py-3 bg-accent/10 text-accent rounded-xl"
+            >
+              <Check className="w-5 h-5" />
+              <span className="text-sm font-medium">You're subscribed! BarakAllahu feek.</span>
+            </motion.div>
+          ) : (
+            <form onSubmit={handleSubmit} className="flex gap-2">
+              <input
+                type="email"
+                value={email}
+                onChange={e => setEmail(e.target.value)}
+                placeholder="Your email address"
+                required
+                className="flex-1 bg-secondary/50 border border-border/30 rounded-xl px-4 py-3 text-sm outline-none focus:ring-1 focus:ring-primary/30 placeholder:text-muted-foreground/50"
+              />
+              <button
+                type="submit"
+                disabled={loading}
+                className="px-5 py-3 bg-primary text-primary-foreground rounded-xl font-semibold text-sm shadow-lg shadow-primary/25 disabled:opacity-50"
+              >
+                {loading ? '...' : 'Join'}
+              </button>
+            </form>
+          )}
+
+          <p className="text-[10px] text-muted-foreground/60">No spam. Unsubscribe anytime. Your privacy is sacred.</p>
+        </motion.div>
+      </div>
+    </section>
+  );
+}
 
 /* ─── 3D Scene Components ─── */
 function GlowingSphere() {
@@ -455,6 +530,9 @@ export default function LandingPage() {
           </div>
         </div>
       </section>
+
+      {/* ═══ Email Capture Section ═══ */}
+      <EmailCaptureSection />
 
       {/* ═══ CTA Section ═══ */}
       <section className="relative py-20 px-6 overflow-hidden">

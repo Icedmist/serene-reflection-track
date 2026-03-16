@@ -14,6 +14,45 @@ export type Database = {
   }
   public: {
     Tables: {
+      adhkar_collection: {
+        Row: {
+          category: string
+          created_at: string
+          full_text: string | null
+          full_text_ar: string | null
+          id: string
+          sort_order: number
+          source: string | null
+          target_count: number
+          title: string
+          title_ar: string | null
+        }
+        Insert: {
+          category?: string
+          created_at?: string
+          full_text?: string | null
+          full_text_ar?: string | null
+          id?: string
+          sort_order?: number
+          source?: string | null
+          target_count?: number
+          title: string
+          title_ar?: string | null
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          full_text?: string | null
+          full_text_ar?: string | null
+          id?: string
+          sort_order?: number
+          source?: string | null
+          target_count?: number
+          title?: string
+          title_ar?: string | null
+        }
+        Relationships: []
+      }
       community_messages: {
         Row: {
           created_at: string
@@ -38,6 +77,60 @@ export type Database = {
           message?: string
           message_type?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      daily_motivations: {
+        Row: {
+          category: string | null
+          content: string
+          content_ar: string | null
+          created_at: string
+          date_key: string
+          id: string
+        }
+        Insert: {
+          category?: string | null
+          content: string
+          content_ar?: string | null
+          created_at?: string
+          date_key: string
+          id?: string
+        }
+        Update: {
+          category?: string | null
+          content?: string
+          content_ar?: string | null
+          created_at?: string
+          date_key?: string
+          id?: string
+        }
+        Relationships: []
+      }
+      invitations: {
+        Row: {
+          created_at: string
+          email: string
+          id: string
+          invited_by: string
+          name: string | null
+          status: string
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          id?: string
+          invited_by: string
+          name?: string | null
+          status?: string
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          id?: string
+          invited_by?: string
+          name?: string | null
+          status?: string
         }
         Relationships: []
       }
@@ -164,6 +257,33 @@ export type Database = {
           share_code?: string
           share_type?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      subscribers: {
+        Row: {
+          created_at: string
+          email: string
+          id: string
+          name: string | null
+          referred_by: string | null
+          source: string | null
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          id?: string
+          name?: string | null
+          referred_by?: string | null
+          source?: string | null
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          id?: string
+          name?: string | null
+          referred_by?: string | null
+          source?: string | null
         }
         Relationships: []
       }

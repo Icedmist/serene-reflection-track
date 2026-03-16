@@ -5,13 +5,14 @@ import { useState, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import ReactMarkdown from 'react-markdown';
 import { toast } from 'sonner';
+import AdhkarBrowser from '@/components/AdhkarBrowser';
 
 const SUGGEST_DUA_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/suggest-dua`;
 
 export default function DhikrPage() {
   const { todayLog, updateDhikr, state, addDua, toggleDuaAnswered, removeDua } = useStore();
   const [animatingId, setAnimatingId] = useState<string | null>(null);
-  const [tab, setTab] = useState<'adhkar' | 'dhikr' | 'dua'>('adhkar');
+  const [tab, setTab] = useState<'adhkar' | 'collection' | 'dhikr' | 'dua'>('adhkar');
   const [newDua, setNewDua] = useState('');
 
   // AI Dua state
@@ -113,9 +114,9 @@ export default function DhikrPage() {
 
       {/* Tabs */}
       <div className="flex gap-1 bg-secondary/50 rounded-xl p-1">
-        {(['adhkar', 'dhikr', 'dua'] as const).map(t => (
-          <button key={t} onClick={() => setTab(t)} className={`flex-1 py-2 rounded-lg text-xs font-medium transition-all ${tab === t ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground'}`}>
-            {t === 'adhkar' ? '📿 Adhkar' : t === 'dhikr' ? '🔢 Counters' : '🤲 Du\'a'}
+        {(['adhkar', 'collection', 'dhikr', 'dua'] as const).map(t => (
+          <button key={t} onClick={() => setTab(t)} className={`flex-1 py-2 rounded-lg text-[10px] font-medium transition-all ${tab === t ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground'}`}>
+            {t === 'adhkar' ? '📿 Adhkar' : t === 'collection' ? '📖 Library' : t === 'dhikr' ? '🔢 Count' : '🤲 Du\'a'}
           </button>
         ))}
       </div>
@@ -157,6 +158,8 @@ export default function DhikrPage() {
           </Link>
         </div>
       )}
+
+      {tab === 'collection' && <AdhkarBrowser />}
 
       {tab === 'dhikr' && (
         <div className="space-y-3">

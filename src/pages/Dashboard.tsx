@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Moon, Flame, BookOpen, CheckCircle2, Circle, PenLine, ChevronDown, Trophy, Plus, X, Edit3, Save, Calendar } from 'lucide-react';
 import { useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
+import DailyMotivation from '@/components/DailyMotivation';
 
 const categoryColors: Record<string, string> = {
   salah: 'bg-primary/20 text-primary',
@@ -187,6 +188,9 @@ export default function Dashboard() {
           <p className="text-[10px] font-semibold">{hijriParts.day}/{hijriParts.month}</p>
         </Link>
       </div>
+
+      {/* Daily Motivation */}
+      <DailyMotivation />
 
       {/* Add Task Button */}
       <div className="flex justify-end">

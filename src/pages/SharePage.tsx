@@ -7,6 +7,7 @@ import { toPng } from 'html-to-image';
 import { Share2, Download, Moon, Copy, Check, Link2, ExternalLink, Users } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { toast } from 'sonner';
+import InviteSection from '@/components/InviteSection';
 
 export default function SharePage() {
   const { state, todayLog } = useStore();
@@ -265,6 +266,9 @@ export default function SharePage() {
           </div>
         )}
       </div>
+
+      {/* Invite Friends Section */}
+      {user && <InviteSection />}
     </div>
   );
 }
